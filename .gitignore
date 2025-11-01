@@ -1,0 +1,22 @@
+# Django
+db.sqlite3
+__pycache__/
+*.pyc
+
+# Python
+venv/
+env/
+.env
+*.pkl
+*.log
+
+# Large/Temporary Files
+face_data.pkl
+test_out.txt
+media/
+*.txt.txt
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
