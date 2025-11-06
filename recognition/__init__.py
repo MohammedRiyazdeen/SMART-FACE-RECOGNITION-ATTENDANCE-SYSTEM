@@ -1,0 +1,1 @@
+# Recognition app init file
