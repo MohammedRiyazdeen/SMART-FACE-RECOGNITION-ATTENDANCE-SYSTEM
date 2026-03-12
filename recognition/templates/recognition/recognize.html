@@ -1,0 +1,235 @@
+{% extends 'recognition/base.html' %}
+
+{% block title %}Recognize Faces - Face Recognition System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">
+            <span class="gradient-text">Live</span> Face Recognition
+        </h1>
+        <p class="page-subtitle">{{ period_name }} - Real-time face detection</p>
+        {% if period_status_label %}
+        <div style="margin-top: 0.5rem;">
+            <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
+                {% if period_status_type == 'active' %}
+                    background: rgba(34,197,94,0.12); color: #16a34a; border: 1px solid rgba(34,197,94,0.3);
+                {% elif period_status_type == 'next' %}
+                    background: rgba(251,191,36,0.12); color: #d97706; border: 1px solid rgba(251,191,36,0.3);
+                {% else %}
+                    background: rgba(161,161,170,0.1); color: var(--text-muted); border: 1px solid var(--border-color);
+                {% endif %}
+            ">
+                {% if period_status_type == 'active' %}
+                    <span style="width: 8px; height: 8px; background: #16a34a; border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite;"></span>
+                {% elif period_status_type == 'next' %}
+                    <span style="width: 8px; height: 8px; background: #d97706; border-radius: 50%; display: inline-block;"></span>
+                {% endif %}
+                {{ period_status_label }}
+            </span>
+        </div>
+        {% endif %}
+    </div>
+
+
+    <div class="recognition-container">
+        <div class="video-section-large">
+            <div class="control-header"
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div class="camera-controls">
+                    <button id="stopBtn" class="btn btn-secondary btn-small" onclick="stopCamera()">
+                        <span class="btn-icon">⏹</span> Stop Camera
+                    </button>
+                    <button id="startBtn" class="btn btn-primary btn-small" onclick="startCamera()"
+                        style="display: none;">
+                        <span class="btn-icon">▶</span> Start Camera
+                    </button>
+                </div>
+
+                <div class="auto-stop-control" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="autoStopToggle"
+                        style="accent-color: #4facfe; width: 1.2rem; height: 1.2rem;">
+                    <label for="autoStopToggle"
+                        style="color: var(--text-secondary); font-weight: 500; cursor: pointer;">Auto-stop on turn
+                        off</label>
+                </div>
+            </div>
+
+            <div class="video-wrapper-large">
+                <img src="{% url 'video_feed_recognize' %}" alt="Camera Feed" class="video-feed">
+                <div class="live-indicator">
+                    <span class="live-dot"></span>
+                    LIVE
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="info-panel">
+                <h3 class="panel-title">
+                    <span class="panel-icon">👥</span>
+                    Registered Faces
+                </h3>
+
+                {% if registered_faces %}
+                <div class="faces-list">
+                    {% for name, count in registered_faces.items %}
+                    <div class="face-item">
+                        <div class="face-avatar">{{ name|first|upper }}</div>
+                        <div class="face-details">
+                            <div class="face-name">{{ name }}</div>
+                            <div class="face-samples">{{ count }} samples</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-panel">
+                    <div class="empty-panel-icon">📭</div>
+                    <p>You haven't registered your face yet</p>
+                    <a href="{% url 'register' %}" class="btn btn-small">Register Now</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="info-panel">
+                <h3 class="panel-title">
+                    <span class="panel-icon">ℹ️</span>
+                    How It Works
+                </h3>
+                <div class="how-it-works">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-text">Camera detects faces in real-time</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-text">AI compares with registered faces</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-text">Displays name and confidence score</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const videoFeed = document.querySelector('.video-feed');
+    const liveIndicator = document.querySelector('.live-indicator');
+    const recognitionUrl = "{% url 'video_feed_recognize' %}";
+    let isConnected = true;
+    let pollInterval = null;
+    let attendanceMarked = false;
+
+    function startCamera() {
+        videoFeed.src = recognitionUrl;
+        liveIndicator.style.display = 'flex';
+        isConnected = true;
+
+        document.getElementById('startBtn').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'flex';
+
+        startPolling();
+    }
+
+    async function stopCamera() {
+        videoFeed.src = "";
+        liveIndicator.style.display = 'none';
+        isConnected = false;
+
+        document.getElementById('startBtn').style.display = 'flex';
+        document.getElementById('stopBtn').style.display = 'none';
+
+        if (pollInterval) clearInterval(pollInterval);
+
+        try {
+            await fetch('/api/camera/stop/', { method: 'POST' });
+        } catch (e) {
+            console.error('Error stopping camera:', e);
+        }
+    }
+
+    function startPolling() {
+        if (pollInterval) clearInterval(pollInterval);
+
+        pollInterval = setInterval(async () => {
+            if (!isConnected || attendanceMarked) return;
+
+            try {
+                const response = await fetch('/api/status/');
+                const data = await response.json();
+
+                if (data.recognition) {
+                    const displayName = data.recognition.display_name || data.recognition.name;
+
+                    // Show who was recognized before marking
+                    const subtitle = document.querySelector('.page-subtitle');
+                    subtitle.innerHTML = '<span style="color: #00ff00;">Recognized: ' + displayName + '</span>';
+
+                    // Backend checks STRICT matching
+                    markAttendance();
+                }
+            } catch (e) {
+                console.error('Polling error:', e);
+            }
+        }, 100);
+    }
+
+    async function markAttendance() {
+        if (attendanceMarked) return;
+        attendanceMarked = true;
+
+        // Visual feedback
+        const subtitle = document.querySelector('.page-subtitle');
+        subtitle.innerHTML = '<span style="color: #00ff00;">Face Recognized! Marking Attendance...</span>';
+        subtitle.style.fontWeight = 'bold';
+
+        try {
+            const response = await fetch("{% url 'mark_attendance' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                subtitle.innerHTML = '<span style="color: #00ff00;">✅ ' + data.message + ' Redirecting in 1s...</span>';
+                setTimeout(async () => {
+                    await stopCamera();
+                    window.location.href = "{% url 'select_period' %}?success=true";
+                }, 1000);
+            } else if (data.already_marked) {
+                // Student already has attendance for this period
+                subtitle.innerHTML = '<span style="color: #ff6b6b; font-size: 1.2rem;">⚠️ ' + data.error + '</span>';
+                setTimeout(async () => {
+                    await stopCamera();
+                    window.location.href = "{% url 'select_period' %}?already=true";
+                }, 1000);
+            } else {
+                subtitle.innerHTML = '<span style="color: #ff0000;">Error: ' + data.error + '</span>';
+                attendanceMarked = false; // Allow retry on real errors
+            }
+        } catch (e) {
+            console.error('Attendance Error:', e);
+            attendanceMarked = false;
+        }
+    }
+
+    // Initialize
+    startPolling();
+
+    // Stop camera when leaving the page
+    window.addEventListener('beforeunload', function () {
+        const data = new FormData();
+        navigator.sendBeacon("{% url 'stop_camera' %}", data);
+    });
+</script>
+{% endblock %}

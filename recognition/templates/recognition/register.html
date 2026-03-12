@@ -1,0 +1,194 @@
+{% extends 'recognition/base.html' %}
+
+{% block title %}Register Face - Face Recognition System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">
+            <span class="gradient-text">Register</span> New Face
+        </h1>
+        <p class="page-subtitle">Auto-Scan 20 photos for highly accurate face recognition</p>
+    </div>
+
+    <div class="registration-container">
+        <div class="video-section">
+            <div class="video-wrapper">
+                <img src="{% url 'video_feed_register' %}" alt="Camera Feed" class="video-feed">
+                <div class="video-overlay" id="videoOverlay">
+                    <div class="overlay-content">
+                        <div class="pulse-icon">📷</div>
+                        <p>Position your face in the frame</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: calc({{ registered_count|default:0 }} / 20 * 100%);"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="photoCount">{{ registered_count|default:0 }}</span> / 20 photos captured
+                </div>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <div class="user-info-display" style="text-align: center; margin-bottom: 2rem;">
+                <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Registering for:</p>
+                <h2 style="font-size: 1.5rem; color: var(--text-primary);">{{ user.name }}</h2>
+                <p style="color: var(--accent-color); font-size: 0.9rem;">{{ user.rollno }}</p>
+            </div>
+
+            {% if is_registered %}
+            <div style="margin-bottom: 1.5rem; padding: 1.5rem; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; color: #16a34a; font-weight: 500; text-align: center;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">✅</div>
+                Registration complete!<br>You have successfully captured 20 faces.
+            </div>
+            
+            <button id="rescanBtn" class="btn btn-primary btn-large" style="display: block; width: 100%; margin-bottom: 1rem;">
+                <span class="btn-icon">🔄</span> Rescan Face (Update Angles)
+            </button>
+            <a href="{% url 'index' %}" class="btn btn-secondary btn-large" style="display: block; text-align: center; text-decoration: none;">
+                Return to Dashboard
+            </a>
+            {% else %}
+            <button id="captureBtn" class="btn btn-primary btn-large">
+                <span class="btn-icon">📸</span>
+                Start Auto-Scan
+            </button>
+            {% endif %}
+
+            <div class="info-box">
+                <div class="info-icon">💡</div>
+                <div class="info-content">
+                    <strong>Tips for best results:</strong>
+                    <ul>
+                        <li>Ensure good lighting</li>
+                        <li>Look directly at the camera</li>
+                        <li>Try different angles</li>
+                        <li>Keep a neutral expression</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="statusMessage" class="status-message"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const captureBtn = document.getElementById('captureBtn');
+    const rescanBtn = document.getElementById('rescanBtn');
+    const photoCountEl = document.getElementById('photoCount');
+    const progressFill = document.getElementById('progressFill');
+    const statusMessage = document.getElementById('statusMessage');
+    const videoOverlay = document.getElementById('videoOverlay');
+
+    let photoCount = {{ registered_count|default:0 }};
+    const userName = "{{ user.name }}";
+
+    const prompts = [
+        "Look straight ahead...", "Hold still...", "Hold still...",
+        "Turn head slightly Left", "Keep looking Left...", "Hold still...",
+        "Turn head slightly Right", "Keep looking Right...", "Hold still...",
+        "Look slightly Up", "Keep looking Up...", "Hold still...",
+        "Look slightly Down", "Keep looking Down...", "Hold still...",
+        "Look straight ahead", "Smile slightly...", "Hold still...",
+        "Neutral face...", "Almost done!"
+    ];
+
+    if (rescanBtn) {
+        rescanBtn.addEventListener('click', async () => {
+             if(confirm("This will delete your current face data and start a new scan. Are you sure?")) {
+                 rescanBtn.disabled = true;
+                 rescanBtn.innerHTML = '<span class="btn-spinner"></span> Resetting...';
+                 try {
+                     const response = await fetch('/api/reset/', { method: 'POST' });
+                     const data = await response.json();
+                     if (data.success) {
+                         window.location.reload();
+                     } else {
+                         showStatus('⚠ ' + data.error, 'error');
+                         rescanBtn.disabled = false;
+                     }
+                 } catch (e) {
+                     showStatus('⚠ Failed to reset face', 'error');
+                     rescanBtn.disabled = false;
+                 }
+             }
+        });
+    }
+    
+    if (captureBtn) {
+        let isScanning = false;
+
+        captureBtn.addEventListener('click', async () => {
+            if (isScanning) return;
+            isScanning = true;
+            captureBtn.disabled = true;
+            captureBtn.innerHTML = '<span class="btn-spinner"></span> Scanning...';
+            
+            videoOverlay.style.display = 'flex';
+            videoOverlay.style.opacity = '1';
+
+            scanNextFrame();
+        });
+
+        async function scanNextFrame() {
+            if (photoCount >= 20) return;
+
+            const promptText = prompts[photoCount] || "Keep looking at the camera";
+            videoOverlay.querySelector('p').textContent = promptText;
+
+            try {
+                const response = await fetch('/api/capture/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: null })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    photoCount = data.count;
+                    photoCountEl.textContent = photoCount;
+                    progressFill.style.width = (photoCount / 20 * 100) + '%';
+                    
+                    if (data.complete) {
+                        videoOverlay.querySelector('p').textContent = "✅ Scan Complete!";
+                        showStatus(`🎉 Registration complete for ${userName}!`, 'success');
+                        setTimeout(() => window.location.href = '/recognize/', 2000);
+                        return;
+                    }
+                } else if (!data.success && data.error && photoCount < 20) {
+                    videoOverlay.querySelector('p').textContent = `⚠ ${data.error}`;
+                }
+            } catch (error) {
+                console.error(error);
+            }
+
+            // Capture next frame after 500ms
+            setTimeout(scanNextFrame, 500);
+        }
+    }
+
+    function showStatus(message, type) {
+        statusMessage.textContent = message;
+        statusMessage.className = 'status-message status-' + type;
+        statusMessage.style.display = 'block';
+
+        setTimeout(() => {
+            statusMessage.style.display = 'none';
+        }, 3000);
+    }
+
+    // Stop camera when leaving the page
+    window.addEventListener('beforeunload', function () {
+        const data = new FormData();
+        navigator.sendBeacon("{% url 'stop_camera' %}", data);
+    });
+</script>
+{% endblock %}

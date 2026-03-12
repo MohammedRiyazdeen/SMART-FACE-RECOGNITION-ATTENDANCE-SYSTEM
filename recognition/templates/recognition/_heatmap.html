@@ -1,0 +1,172 @@
+<!-- Shared Heatmap Component - used by index.html & student_detail.html -->
+<div style="background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; grid-column: 1 / -1;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h4 style="margin: 0; color: var(--text-primary); font-size: 1.1rem;">Daily Attendance Heatmap</h4>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Past 365 Days</div>
+    </div>
+    <!-- Month labels row -->
+    <div id="heatmapMonths" style="display: flex; margin-left: 32px; margin-bottom: 4px; font-size: 0.7rem; color: var(--text-muted); font-weight: 500; user-select: none;"></div>
+    <div style="display: flex; gap: 0;">
+        <!-- Day of week labels -->
+        <div id="heatmapDayLabels" style="display: flex; flex-direction: column; gap: 3px; margin-right: 6px; font-size: 0.65rem; color: var(--text-muted); font-weight: 500; user-select: none; padding-top: 1px;"></div>
+        <!-- Grid -->
+        <div style="width: 100%; overflow-x: auto; padding-bottom: 0.5rem;">
+            <div id="heatmapContainer"
+                style="display: inline-grid; grid-template-rows: repeat(7, 1fr); grid-auto-flow: column; gap: 3px;">
+            </div>
+        </div>
+    </div>
+    <!-- Tooltip (hidden by default) -->
+    <div id="heatmapTooltip" style="position: fixed; display: none; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; font-size: 0.78rem; color: var(--text-primary); box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; pointer-events: none; white-space: nowrap;"></div>
+    <!-- Legend -->
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 0.75rem; font-size: 0.75rem; color: var(--text-muted); user-select: none;">
+        <span>Absent</span>
+        <div style="display: flex; gap: 2px; align-items: center;">
+            <div style="width: 12px; height: 12px; background: rgba(244,63,94,0.7); border-radius: 2px;" title="Absent"></div>
+            <div style="width: 12px; height: 12px; background: #27272a; border-radius: 2px;" title="No Class"></div>
+            <div style="width: 12px; height: 12px; background: rgba(34,197,94,0.2); border-radius: 2px;" title="1 Period"></div>
+            <div style="width: 12px; height: 12px; background: rgba(34,197,94,0.4); border-radius: 2px;" title="2 Periods"></div>
+            <div style="width: 12px; height: 12px; background: rgba(34,197,94,0.6); border-radius: 2px;" title="3 Periods"></div>
+            <div style="width: 12px; height: 12px; background: rgba(34,197,94,0.8); border-radius: 2px;" title="4 Periods"></div>
+            <div style="width: 12px; height: 12px; background: #16a34a; border-radius: 2px;" title="5+ Periods"></div>
+        </div>
+        <span>Full</span>
+    </div>
+</div>
+
+<!-- Heatmap JS -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const dataElement = document.getElementById('analytics-data');
+    if (!dataElement) return;
+    const chartData = JSON.parse(JSON.parse(dataElement.textContent));
+    const heatmapData = chartData.heatmap || [];
+    const attendanceDict = {};
+    heatmapData.forEach(item => { attendanceDict[item.date] = item.count; });
+
+    const container = document.getElementById('heatmapContainer');
+    const monthsRow = document.getElementById('heatmapMonths');
+    const dayLabels = document.getElementById('heatmapDayLabels');
+    const tooltip = document.getElementById('heatmapTooltip');
+
+    if (!container) return;
+
+    const today = new Date();
+    const daysToGenerate = 365;
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - daysToGenerate + 1);
+
+    // Align to Sunday
+    while (startDate.getDay() !== 0) {
+        startDate.setDate(startDate.getDate() - 1);
+    }
+
+    // Day labels (Mon, Wed, Fri only)
+    const dayNames = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
+    if (dayLabels) {
+        dayNames.forEach(name => {
+            const label = document.createElement('div');
+            label.style.cssText = 'height: 13px; display: flex; align-items: center; line-height: 1;';
+            label.textContent = name;
+            dayLabels.appendChild(label);
+        });
+    }
+
+    // Track months for labels
+    const monthTracker = [];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    let lastMonth = -1;
+    let colIndex = 0;
+
+    // Generate squares
+    let currentDate = new Date(startDate);
+    while (currentDate <= today) {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const monthStr = String(month + 1).padStart(2, '0');
+        const dateString = `${year}-${monthStr}-${day}`;
+        const dayOfWeek = currentDate.getDay();
+
+        // Track month changes (only on Sunday = start of column)
+        if (dayOfWeek === 0) {
+            if (month !== lastMonth) {
+                monthTracker.push({ col: colIndex, name: monthNames[month] });
+                lastMonth = month;
+            }
+            colIndex++;
+        }
+
+        const count = attendanceDict[dateString];
+        const square = document.createElement('div');
+        square.style.cssText = 'width: 13px; height: 13px; border-radius: 3px; transition: all 0.15s ease; cursor: pointer; border: 1px solid transparent;';
+
+        let bgColor = '#27272a';
+        let statusText = 'No classes';
+
+        if (count !== undefined) {
+            if (count === 0) {
+                bgColor = 'rgba(244, 63, 94, 0.7)';
+                statusText = 'Absent (0 periods)';
+            } else if (count === 1) {
+                bgColor = 'rgba(34, 197, 94, 0.2)';
+                statusText = '1 period present';
+            } else if (count === 2) {
+                bgColor = 'rgba(34, 197, 94, 0.4)';
+                statusText = '2 periods present';
+            } else if (count === 3) {
+                bgColor = 'rgba(34, 197, 94, 0.6)';
+                statusText = '3 periods present';
+            } else if (count === 4) {
+                bgColor = 'rgba(34, 197, 94, 0.8)';
+                statusText = '4 periods present';
+            } else if (count >= 5) {
+                bgColor = '#16a34a';
+                statusText = `${count} periods present (Full)`;
+            }
+        }
+
+        square.style.backgroundColor = bgColor;
+
+        // Tooltip
+        const tooltipDate = currentDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        const tooltipHTML = `<strong>${tooltipDate}</strong><br><span style="color: var(--text-muted);">${statusText}</span>`;
+
+        square.addEventListener('mouseenter', (e) => {
+            square.style.transform = 'scale(1.35)';
+            square.style.borderColor = 'var(--text-muted)';
+            square.style.zIndex = '10';
+            if (tooltip) {
+                tooltip.innerHTML = tooltipHTML;
+                tooltip.style.display = 'block';
+                const rect = square.getBoundingClientRect();
+                tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+                tooltip.style.top = (rect.top - tooltip.offsetHeight - 8) + 'px';
+            }
+        });
+
+        square.addEventListener('mouseleave', () => {
+            square.style.transform = 'scale(1)';
+            square.style.borderColor = 'transparent';
+            square.style.zIndex = '';
+            if (tooltip) tooltip.style.display = 'none';
+        });
+
+        container.appendChild(square);
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Render month labels
+    if (monthsRow && monthTracker.length > 0) {
+        const squareSize = 13 + 3;
+        monthTracker.forEach((m, idx) => {
+            const span = document.createElement('span');
+            span.textContent = m.name;
+            const nextCol = idx < monthTracker.length - 1 ? monthTracker[idx + 1].col : colIndex;
+            const widthCols = nextCol - m.col;
+            span.style.cssText = `display: inline-block; width: ${widthCols * squareSize}px; text-align: left;`;
+            monthsRow.appendChild(span);
+        });
+    }
+});
+</script>

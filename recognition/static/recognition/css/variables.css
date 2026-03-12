@@ -1,0 +1,46 @@
+:root {
+  --primary: linear-gradient(135deg, #f43f5e, #e11d48);
+  --secondary: linear-gradient(135deg, #d946ef, #a21caf);
+  --success: linear-gradient(135deg, #22c55e, #10b981);
+  --bg-body: #fdf2f8;
+  --bg-surface: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.88);
+  --border-color: rgba(0, 0, 0, 0.08);
+  --text-primary: #09090b;
+  --text-secondary: #3f3f46;
+  --text-muted: #71717a;
+  --shadow: 0 4px 20px -2px rgba(244, 63, 94, 0.06);
+  --blob-1: rgba(244, 63, 94, 0.1);
+  --blob-2: rgba(217, 70, 239, 0.08);
+  --card-bg: #ffffff;
+}
+
+[data-theme="dark"] {
+  --bg-body: #09090b;
+  --bg-surface: #18181b;
+  --bg-glass: rgba(24, 24, 27, 0.88);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --text-primary: #fafafa;
+  --text-secondary: #d4d4d8;
+  --text-muted: #a1a1aa;
+  --shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5);
+  --blob-1: rgba(244, 63, 94, 0.12);
+  --blob-2: rgba(217, 70, 239, 0.10);
+  --card-bg: #18181b;
+}
+
+[data-theme="dark"] .theme-toggle {
+  color: #fb7185;
+}
+
+[data-theme="dark"] .sun-and-moon>.sun {
+  transform: scale(1.75);
+}
+
+[data-theme="dark"] .sun-and-moon>.sun-beams {
+  opacity: 0;
+}
+
+[data-theme="dark"] .sun-and-moon>.moon>circle {
+  transform: translateX(-7px);
+}

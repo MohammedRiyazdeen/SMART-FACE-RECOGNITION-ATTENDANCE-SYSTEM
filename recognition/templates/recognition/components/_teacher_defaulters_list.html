@@ -1,0 +1,23 @@
+        <!-- Defaulters List -->
+        {% if class_analytics.defaulters %}
+        <div style="background: rgba(239, 68, 68, 0.03); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 16px; padding: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;">
+                <span style="font-size: 1.2rem;">⚠️</span>
+                <h4 style="margin: 0; color: #dc2626; font-size: 1.1rem;">Defaulters List (&lt; 75%)</h4>
+                <span style="background: #dc2626; color: white; font-size: 0.8rem; padding: 2px 8px; border-radius: 20px; font-weight: bold;">{{ class_analytics.defaulters|length }} Students</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                {% for d in class_analytics.defaulters %}
+                <a href="{% url 'student_detail' d.student.id %}" style="text-decoration: none;">
+                    <div style="background: var(--bg-body); border: 1px solid rgba(239, 68, 68, 0.1); padding: 10px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;">
+                        <div>
+                            <div style="color: var(--text-primary); font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">{{ d.student.name }}</div>
+                            <div style="color: var(--text-muted); font-size: 0.8rem;">{{ d.short_dept }}</div>
+                        </div>
+                        <div style="color: #dc2626; font-weight: 800;">{{ d.percentage }}%</div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}

@@ -1,0 +1,340 @@
+{% extends 'recognition/base.html' %}
+{% load static %}
+
+{% block title %}Student Report - {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header with Back Button -->
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'teacher_dashboard' %}"
+            style="display: inline-flex; align-items: center; color: var(--text-secondary); text-decoration: none; font-weight: 500; transition: color 0.3s ease;">
+            <span style="margin-right: 8px;">←</span> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Student Profile Summary -->
+    <div class="dashboard-card" style="margin-bottom: 2rem;">
+        <div class="dashboard-card-inner">
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <div
+                    style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; color: white;">
+                    {{ student.name|first|upper }}
+                </div>
+                <div>
+                    <h1 style="margin: 0; font-size: 2rem; font-weight: 700; color: var(--text-primary);">
+                        {{student.name }}
+                    </h1>
+                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem; color: var(--text-secondary);">
+                        <span>🆔 {{ student.rollno }}</span>
+                        <span>🎓 {{ student.year }} - {{ student.get_department_display }}</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Reset Button REMOVED -->
+        </div>
+    </div>
+
+    <!-- Attendance History Table -->
+    <div class="dashboard-card" style="margin-top: 2rem;">
+    <div class="dashboard-card-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <h2 class="card-title" style="margin: 0;">Attendance History</h2>
+                {% if showing_date and active_filter == 'today' %}
+                <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">
+                    {% if is_fallback_date %}
+                        Showing <span style="color: #f59e0b; font-weight: 600;">{{ showing_date|date:"D, M d" }}</span>
+                        <span style="font-size: 0.75rem; opacity: 0.7;">(No classes today)</span>
+                    {% else %}
+                        <span style="color: #22c55e; font-weight: 600;">Today</span> — {{ showing_date|date:"D, M d, Y" }}
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <form method="GET" action="" id="filterForm" style="margin-bottom: 1.5rem;">
+            <!-- Quick Pills Row -->
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+                <button type="submit" name="filter" value="today"
+                    style="padding: 6px 16px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid {% if active_filter == 'today' %}rgba(244,63,94,0.4){% else %}var(--border-color){% endif %}; background: {% if active_filter == 'today' %}rgba(244,63,94,0.12){% else %}transparent{% endif %}; color: {% if active_filter == 'today' %}#f43f5e{% else %}var(--text-secondary){% endif %};">
+                    Today
+                </button>
+                <button type="submit" name="filter" value="week"
+                    style="padding: 6px 16px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid {% if active_filter == 'week' %}rgba(244,63,94,0.4){% else %}var(--border-color){% endif %}; background: {% if active_filter == 'week' %}rgba(244,63,94,0.12){% else %}transparent{% endif %}; color: {% if active_filter == 'week' %}#f43f5e{% else %}var(--text-secondary){% endif %};">
+                    This Week
+                </button>
+                <button type="submit" name="filter" value="month"
+                    style="padding: 6px 16px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: 1px solid {% if active_filter == 'month' %}rgba(244,63,94,0.4){% else %}var(--border-color){% endif %}; background: {% if active_filter == 'month' %}rgba(244,63,94,0.12){% else %}transparent{% endif %}; color: {% if active_filter == 'month' %}#f43f5e{% else %}var(--text-secondary){% endif %};">
+                    This Month
+                </button>
+            </div>
+
+            <!-- Inline Filters Row -->
+            <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted); white-space: nowrap;">Date</label>
+                    <input type="date" name="date" value="{{ filter_date }}"
+                        style="padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-body); color: var(--text-primary); font-size: 0.85rem; font-family: inherit;"
+                        onchange="document.getElementById('filterForm').submit();">
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted); white-space: nowrap;">Subject</label>
+                    <select name="subject"
+                        style="padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-body); color: var(--text-primary); font-size: 0.85rem; font-family: inherit; min-width: 120px;"
+                        onchange="document.getElementById('filterForm').submit();">
+                        <option value="">All</option>
+                        {% for subj in all_subjects %}
+                        <option value="{{ subj }}" {% if filter_subject == subj %}selected{% endif %}>{{ subj }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted); white-space: nowrap;">Status</label>
+                    <select name="status"
+                        style="padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-body); color: var(--text-primary); font-size: 0.85rem; font-family: inherit; min-width: 100px;"
+                        onchange="document.getElementById('filterForm').submit();">
+                        <option value="">All</option>
+                        <option value="Present" {% if filter_status == 'Present' %}selected{% endif %}>Present</option>
+                        <option value="Absent" {% if filter_status == 'Absent' %}selected{% endif %}>Absent</option>
+                    </select>
+                </div>
+                {% if filter_date or filter_subject or filter_status or active_filter != 'today' %}
+                <a href="?filter=today" style="font-size: 0.82rem; color: #f43f5e; font-weight: 600; text-decoration: none; padding: 6px 12px; border: 1px solid rgba(244,63,94,0.2); border-radius: 8px; transition: all 0.2s;"
+                    onmouseover="this.style.background='rgba(244,63,94,0.08)'" onmouseout="this.style.background='transparent'">
+                    Clear Filters
+                </a>
+                {% endif %}
+            </div>
+        </form>
+
+        {% include 'recognition/components/_attendance_table.html' %}
+    </div>
+</div>
+
+    <!-- Analytics Section -->
+    <div class="dashboard-card" style="margin-top: 2rem;">
+        <div class="dashboard-card-body">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <h2 class="card-title" style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5rem;">&#x1f4ca;</span> Performance Analytics
+                </h2>
+                {% if analytics.total > 0 %}
+                {% if analytics.is_warning %}
+                <span
+                    style="background: rgba(239, 68, 68, 0.15); color: #dc2626; padding: 8px 16px; border-radius: 30px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.9rem;">
+                    &#x26A0;&#xFE0F; Attendance Below 75% Limit
+                </span>
+                {% else %}
+                <span
+                    style="background: rgba(34, 197, 94, 0.15); color: #16a34a; padding: 8px 16px; border-radius: 30px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 0.9rem;">
+                    &#x2705; Good Standing
+                </span>
+                {% endif %}
+                {% endif %}
+            </div>
+
+            {% if analytics.total > 0 %}
+            {% include 'recognition/components/_stats_cards.html' %}
+
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+                <!-- DAILY HEATMAP (shared component) -->
+                {% include 'recognition/_heatmap.html' %}
+            </div>
+        </div>
+
+        <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+            <!-- PIE CHART -->
+            <div
+                style="background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
+                <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-primary); font-size: 1.1rem;">
+                    Present vs Absent</h4>
+                <div style="height: 250px; display: flex; justify-content: center;"><canvas id="pieChart"></canvas>
+                </div>
+            </div>
+            <!-- POLAR CHART: Subject Avoidance -->
+            <div
+                style="background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h4 style="margin: 0; color: var(--text-primary); font-size: 1.1rem;">Subject Avoidance</h4>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Missed Core Classes (90d)</div>
+                </div>
+                <div style="height: 250px; display: flex; justify-content: center;"><canvas id="periodChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div
+            style="background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
+            <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-primary); font-size: 1.1rem;">
+                Subject-wise Attendance %</h4>
+            <div style="height: 250px;"><canvas id="subjectChart"></canvas></div>
+            {% if analytics.subject_legend %}
+            <div style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 2rem;">
+                <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                    {% for short, full in analytics.subject_legend.items %}
+                    <div
+                        style="display: flex; align-items: center; background: var(--bg-body); padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div
+                            style="font-weight: 700; color: #10b981; font-size: 0.95rem; margin-right: 12px; border-right: 1px solid var(--border-color); padding-right: 12px;">
+                            {{ short }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">{{ full }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+            <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">&#x1F4ca;</div>
+            <p style="font-size: 1.1rem;">No data available for analytics yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div> <!-- Close .container -->
+
+{% if analytics.total > 0 %}
+{{ analytics.chart_data|json_script:"analytics-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const dataElement = document.getElementById('analytics-data');
+        if (!dataElement) return;
+        const chartData = JSON.parse(JSON.parse(dataElement.textContent));
+
+        Chart.defaults.color = '#9ca3af';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+
+        // Heatmap is now handled by the shared _heatmap.html include
+
+
+        const ctxPie = document.getElementById('pieChart').getContext('2d');
+        new Chart(ctxPie, {
+            type: 'doughnut',
+            data: {
+                labels: chartData.pie.labels,
+                datasets: [{
+                    data: chartData.pie.data,
+                    backgroundColor: ['#22c55e', '#ef4444'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } }
+                }
+            }
+        });
+
+        // 3. Subject Avoidance Radar Chart
+        const avoidanceData = chartData.subject_avoidance;
+        if (avoidanceData) {
+            const ctxPeriod = document.getElementById('periodChart').getContext('2d');
+            new Chart(ctxPeriod, {
+                type: 'radar',
+                data: {
+                    labels: avoidanceData.labels,
+                    datasets: [{
+                        label: 'Times Absent',
+                        data: avoidanceData.data,
+                        backgroundColor: 'rgba(244, 63, 94, 0.2)',
+                        borderColor: '#f43f5e',
+                        pointBackgroundColor: '#f43f5e',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#f43f5e',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(150, 150, 150, 0.2)' },
+                            grid: { color: 'rgba(150, 150, 150, 0.2)' },
+                            pointLabels: {
+                                color: 'var(--text-secondary)',
+                                font: { size: 10, family: "'Inter', sans-serif" }
+                            },
+                            ticks: { display: false, backdropColor: 'transparent' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return ` Missed: ${context.parsed.r} times`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const ctxSubject = document.getElementById('subjectChart').getContext('2d');
+        new Chart(ctxSubject, {
+            type: 'bar',
+            data: {
+                labels: chartData.subject.labels,
+                datasets: [
+                    {
+                        type: 'line',
+                        label: 'Trend',
+                        data: chartData.subject.data,
+                        borderColor: 'rgba(56, 189, 248, 0.8)',
+                        backgroundColor: 'rgba(56, 189, 248, 0.05)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: 'rgba(56, 189, 248, 1)',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Attendance %',
+                        data: chartData.subject.data,
+                        backgroundColor: chartData.subject.data.map(val =>
+                            val < 75 ? 'rgba(244, 63, 94, 0.55)' : 'rgba(20, 184, 166, 0.6)'
+                        ),
+                        hoverBackgroundColor: chartData.subject.data.map(val =>
+                            val < 75 ? 'rgba(244, 63, 94, 0.8)' : 'rgba(20, 184, 166, 0.85)'
+                        ),
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        barPercentage: 0.5,
+                        categoryPercentage: 0.6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { min: 0, max: 100, grid: { color: 'rgba(255, 255, 255, 0.04)' }, ticks: { font: { size: 11 } } },
+                    x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 0, font: { size: 11 } } }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

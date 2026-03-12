@@ -1,0 +1,255 @@
+{% extends 'recognition/base.html' %}
+
+{% block title %}Login - Face Recognition System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="hero-section" style="margin-top: 2rem; margin-bottom: 2rem;">
+        <h1 class="hero-title" style="font-size: 2.5rem;">
+            <span class="gradient-text">AI-Powered</span>
+            <br>Face Recognition
+        </h1>
+        <p class="hero-subtitle" style="font-size: 1rem;">
+            Advanced facial recognition system with real-time detection and identification
+        </p>
+    </div>
+
+    <div class="auth-container" style="min-height: auto; padding-bottom: 4rem;">
+        <div class="auth-card">
+
+            <!-- Login Tabs -->
+            <div class="login-tabs">
+                <button class="login-tab active" onclick="switchTab('student')" id="tab-student">
+                    Student
+                </button>
+                <button class="login-tab" onclick="switchTab('teacher')" id="tab-teacher">
+                    Teacher
+                </button>
+            </div>
+
+            <h2 class="auth-title" id="auth-title">Student Login</h2>
+            <p class="auth-subtitle" id="auth-subtitle">Enter your roll number to access dashboard</p>
+
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+                <input type="hidden" name="login_role" id="login-role" value="student">
+
+                <div class="input-group">
+                    <label for="id_username" class="input-label" id="label-username">Roll Number</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                    <div class="field-error">{{ form.username.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="input-group">
+                    <label for="id_password" class="input-label" id="label-password">Date of Birth</label>
+                    {{ form.password }}
+                    {% if form.password.errors %}
+                    <div class="field-error">{{ form.password.errors }}</div>
+                    {% endif %}
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="field-error" style="margin-bottom: 1rem; text-align: center;">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <button type="submit" class="btn btn-primary btn-large">
+                    Login
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p style="margin-bottom: 0.5rem; color: var(--text-secondary);">New here?</p>
+                <a href="{% url 'signup' %}" class="signup-btn" id="signup-link">
+                    Create Student Account
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Auth specific styles */
+    .auth-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh;
+    }
+
+    .auth-card {
+        background: var(--bg-surface);
+        border: 2px solid var(--border-color);
+        border-radius: 24px;
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 420px;
+        backdrop-filter: blur(10px);
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Tabs */
+    .login-tabs {
+        display: flex;
+        background: var(--bg-body);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 4px;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+
+    .login-tab {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .login-tab.active {
+        background: var(--primary-gradient);
+        color: white;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    .login-tab:hover:not(.active) {
+        color: var(--text-primary);
+        background: var(--bg-body);
+    }
+
+    .auth-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-align: center;
+        color: var(--text-primary);
+    }
+
+    .auth-subtitle {
+        color: var(--text-secondary);
+        text-align: center;
+        margin-bottom: 2rem;
+        font-size: 0.95rem;
+    }
+
+    .auth-form .input-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .auth-form input {
+        width: 100%;
+        padding: 1rem;
+        background: var(--bg-body);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        color: var(--text-primary);
+        font-size: 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .auth-form input:focus {
+        outline: none;
+        border-color: #6366f1;
+        background: var(--bg-surface);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    }
+
+    .auth-form input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .field-error {
+        color: #ef4444;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+    }
+
+    .auth-footer {
+        text-align: center;
+        margin-top: 2.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .signup-btn {
+        display: inline-block;
+        padding: 0.8rem 1.5rem;
+        background: rgba(99, 102, 241, 0.1);
+        color: #6366f1;
+        text-decoration: none;
+        font-weight: 600;
+        border-radius: 12px;
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+
+    .signup-btn:hover {
+        background: rgba(99, 102, 241, 0.2);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+</style>
+
+<script>
+    function switchTab(role) {
+        // Tabs
+        document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + role).classList.add('active');
+
+        // Content
+        const title = document.getElementById('auth-title');
+        const subtitle = document.getElementById('auth-subtitle');
+        const label = document.getElementById('label-username');
+        const pwdLabel = document.getElementById('label-password');
+        const pwdInput = document.getElementById('id_password');
+        const link = document.getElementById('signup-link');
+
+        // Update hidden role field
+        document.getElementById('login-role').value = role;
+
+        if (role === 'student') {
+            title.textContent = 'Student Login';
+            subtitle.textContent = 'Enter your roll number to access dashboard';
+            label.textContent = 'Roll Number';
+            pwdLabel.textContent = 'Date of Birth';
+            
+            // Make DOB visible and show format placeholder
+            pwdInput.type = 'text';
+            pwdInput.placeholder = 'DD/MM/YYYY';
+            
+            link.href = "{% url 'signup' %}";
+            link.textContent = 'Create Student Account';
+        } else {
+            title.textContent = 'Teacher Login';
+            subtitle.textContent = 'Enter your Staff ID to access dashboard';
+            label.textContent = 'Staff ID';
+            pwdLabel.textContent = 'Password';
+            
+            // Hide normal teacher password and remove placeholder
+            pwdInput.type = 'password';
+            pwdInput.placeholder = '';
+            
+            link.href = "{% url 'teacher_signup' %}";
+            link.textContent = 'Create Teacher Account';
+        }
+    }
+
+    // Initialize the default login tab states when the page loads
+    document.addEventListener("DOMContentLoaded", function() {
+        switchTab('student');
+    });
+</script>
+{% endblock %}

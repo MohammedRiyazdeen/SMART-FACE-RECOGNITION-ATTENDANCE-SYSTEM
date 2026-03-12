@@ -1,0 +1,356 @@
+{% extends 'recognition/base.html' %}
+{% load static %}
+
+{% block title %}Teacher Dashboard - Face Recognition System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Dashboard Profile Card -->
+    <div class="dashboard-card">
+        <div class="dashboard-card-inner">
+            <div class="dashboard-left">
+                <div class="dashboard-avatar">
+                    <div class="dashboard-avatar-ring">
+                        <img src="{% static 'recognition/img/default.png' %}" alt="Profile"
+                            class="dashboard-avatar-img">
+                    </div>
+                </div>
+                <div class="dashboard-info">
+                    <h2 class="dashboard-name">{{ user.name|upper }}</h2>
+                    <div style="font-size: 0.9rem; color: #6366f1; font-weight: 600; margin-bottom: 0.5rem;">
+                        Day Order: {{ day_order }}
+                    </div>
+                    <div class="dashboard-meta">
+                        <span class="dashboard-badge">
+                            <span class="badge-icon">👨‍🏫</span>
+                            Teacher
+                        </span>
+                        <span class="dashboard-badge">
+                            <span class="badge-icon">🆔</span>
+                            {{ user.rollno }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="dashboard-gradient-bar"></div>
+    </div>
+
+    <div class="hero-section">
+        <h1 class="hero-title">
+            <span class="gradient-text">Student List</span>
+        </h1>
+        <p class="hero-subtitle">
+            Select a student to view their attendance report
+        </p>
+    </div>
+
+    <!-- Student Cards Grid -->
+    <div style="margin-top: 2rem; margin-bottom: 3rem;">
+        {% if students %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+            {% for student in students %}
+            <a href="{% url 'student_detail' student.id %}" class="student-card-link">
+                <div class="student-card">
+                    <div class="student-avatar">
+                        {{ student.name|first|upper }}
+                    </div>
+
+                    <div class="student-info">
+                        <h3 class="student-name" title="{{ student.name }}">
+                            {{ student.name }}
+                        </h3>
+                        <div class="student-rollno">
+                            {{ student.rollno }}
+                        </div>
+                    </div>
+
+                    <div class="student-meta" style="text-align: right;">
+                        <span class="student-dept-badge" style="margin-bottom: 5px;">
+                            {{ student.year }}-{{ student.department }}
+                        </span>
+                        {% if student.attendance_percentage %}
+                            <span style="font-size: 0.85rem; font-weight: 700; color: {% if student.attendance_percentage < 75 %}#dc2626{% else %}#16a34a{% endif %};">
+                                {{ student.attendance_percentage }}%
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div
+            style="text-align: center; padding: 3rem; color: var(--text-muted); background: var(--bg-surface); border: 2px solid var(--border-color); border-radius: 20px;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
+            <p>No students registered yet.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Dashboard Tools & Analytics Below -->
+
+    {% include 'recognition/components/_teacher_action_panel.html' %}
+
+    <!-- Class Level Analytics -->
+    {% if class_analytics.has_data %}
+    <div style="margin-bottom: 3rem;">
+
+        <!-- Row 1: Today's Snapshot + Weekly Trend -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+
+            <!-- Card 1: Today's Snapshot -->
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1.25rem;">
+                    <div style="width: 36px; height: 36px; background: rgba(34,197,94,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    </div>
+                    <h4 style="margin: 0; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Today's Snapshot</h4>
+                </div>
+                {% if class_analytics.today_has_data %}
+                <div style="font-size: 2.8rem; font-weight: 800; color: {% if class_analytics.today_percentage >= 75 %}#22c55e{% elif class_analytics.today_percentage >= 50 %}#f59e0b{% else %}#ef4444{% endif %}; line-height: 1; margin-bottom: 0.75rem;">
+                    {{ class_analytics.today_percentage }}%
+                </div>
+                <div style="display: flex; gap: 1.5rem; font-size: 0.88rem; margin-bottom: 1rem;">
+                    <div><span style="color: #22c55e; font-weight: 700;">{{ class_analytics.today_present }}</span> <span style="color: var(--text-muted);">Present</span></div>
+                    <div><span style="color: #ef4444; font-weight: 700;">{{ class_analytics.today_absent }}</span> <span style="color: var(--text-muted);">Absent</span></div>
+                    <div><span style="color: var(--text-secondary); font-weight: 600;">{{ class_analytics.total_students }}</span> <span style="color: var(--text-muted);">Total</span></div>
+                </div>
+                <!-- Progress bar -->
+                <div style="height: 8px; background: rgba(239,68,68,0.2); border-radius: 4px; overflow: hidden;">
+                    <div style="height: 100%; width: {{ class_analytics.today_percentage }}%; background: linear-gradient(90deg, #22c55e, #16a34a); border-radius: 4px; transition: width 0.5s;"></div>
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 1.5rem 0; color: var(--text-muted); font-size: 0.9rem;">
+                    No attendance recorded today
+                    <div style="font-size: 0.8rem; margin-top: 4px; opacity: 0.7;">Sunday / Holiday</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Card 2: Weekly Trend -->
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1.25rem;">
+                    <div style="width: 36px; height: 36px; background: rgba(99,102,241,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </div>
+                    <h4 style="margin: 0; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Weekly Trend</h4>
+                </div>
+                <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 0.5rem;">
+                    <div style="font-size: 2.8rem; font-weight: 800; color: var(--text-primary); line-height: 1;">{{ class_analytics.this_week_pct }}%</div>
+                    {% if class_analytics.week_direction == 'up' %}
+                    <div style="display: flex; align-items: center; gap: 4px; background: rgba(34,197,94,0.1); color: #22c55e; padding: 4px 10px; border-radius: 20px; font-size: 0.82rem; font-weight: 700;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+                        {{ class_analytics.week_change }}%
+                    </div>
+                    {% elif class_analytics.week_direction == 'down' %}
+                    <div style="display: flex; align-items: center; gap: 4px; background: rgba(239,68,68,0.1); color: #ef4444; padding: 4px 10px; border-radius: 20px; font-size: 0.82rem; font-weight: 700;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        {{ class_analytics.week_change }}%
+                    </div>
+                    {% else %}
+                    <div style="display: flex; align-items: center; gap: 4px; background: rgba(161,161,170,0.1); color: var(--text-muted); padding: 4px 10px; border-radius: 20px; font-size: 0.82rem; font-weight: 700;">
+                        — No change
+                    </div>
+                    {% endif %}
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 1rem;">
+                    This week vs last week <span style="color: var(--text-secondary); font-weight: 500;">({{ class_analytics.last_week_pct }}%)</span>
+                </div>
+                <!-- Comparison bars -->
+                <div style="display: flex; gap: 8px; align-items: center; font-size: 0.78rem;">
+                    <span style="color: var(--text-muted); width: 55px;">Last wk</span>
+                    <div style="flex: 1; height: 6px; background: rgba(161,161,170,0.15); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: {{ class_analytics.last_week_pct }}%; background: rgba(161,161,170,0.4); border-radius: 3px;"></div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; font-size: 0.78rem; margin-top: 6px;">
+                    <span style="color: var(--text-muted); width: 55px;">This wk</span>
+                    <div style="flex: 1; height: 6px; background: rgba(99,102,241,0.15); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: {{ class_analytics.this_week_pct }}%; background: #6366f1; border-radius: 3px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Period Breakdown + Alerts -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+
+            <!-- Card 3: Period-wise Breakdown -->
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1.25rem;">
+                    <div style="width: 36px; height: 36px; background: rgba(251,191,36,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <h4 style="margin: 0; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Period Breakdown (Today)</h4>
+                </div>
+                {% for p in class_analytics.period_breakdown %}
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <span style="min-width: 22px; font-size: 0.82rem; font-weight: 700; color: var(--text-secondary);">P{{ p.id }}</span>
+                    <div style="flex: 1; height: 8px; background: rgba(161,161,170,0.12); border-radius: 4px; overflow: hidden;">
+                        {% if p.has_data %}
+                        <div style="height: 100%; width: {{ p.percentage }}%; background: {% if p.percentage >= 75 %}#22c55e{% elif p.percentage >= 50 %}#f59e0b{% else %}#ef4444{% endif %}; border-radius: 4px; transition: width 0.5s;"></div>
+                        {% endif %}
+                    </div>
+                    {% if p.has_data %}
+                    <span style="min-width: 42px; text-align: right; font-size: 0.82rem; font-weight: 700; color: {% if p.percentage >= 75 %}#22c55e{% elif p.percentage >= 50 %}#f59e0b{% else %}#ef4444{% endif %};">{{ p.percentage }}%</span>
+                    <span style="font-size: 0.72rem; color: var(--text-muted); min-width: 35px;">{{ p.present }}/{{ p.total }}</span>
+                    {% else %}
+                    <span style="font-size: 0.78rem; color: var(--text-muted); opacity: 0.5;">—</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% if not class_analytics.today_has_data %}
+                <div style="text-align: center; padding: 0.5rem 0; color: var(--text-muted); font-size: 0.82rem; opacity: 0.7;">No data for today</div>
+                {% endif %}
+            </div>
+
+            <!-- Card 4: Attendance Alerts -->
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1.25rem;">
+                    <div style="width: 36px; height: 36px; background: rgba(239,68,68,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <h4 style="margin: 0; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Attendance Alerts</h4>
+                </div>
+                <!-- Summary pills -->
+                <div style="display: flex; gap: 10px; margin-bottom: 1.25rem; flex-wrap: wrap;">
+                    <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.15); padding: 8px 14px; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.4rem; font-weight: 800; color: #ef4444;">{{ class_analytics.defaulter_count }}</span>
+                        <span style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.2;">Below<br>75%</span>
+                    </div>
+                    <div style="background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.15); padding: 8px 14px; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.4rem; font-weight: 800; color: #f59e0b;">{{ class_analytics.declining_students|length }}</span>
+                        <span style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.2;">Declining<br>Trend</span>
+                    </div>
+                </div>
+                <!-- Declining students list -->
+                {% if class_analytics.declining_students %}
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 500;">Students with declining attendance:</div>
+                {% for d in class_analytics.declining_students %}
+                <a href="{% url 'student_detail' d.student.id %}" style="text-decoration: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: 8px; margin-bottom: 4px; transition: all 0.15s; background: transparent;" onmouseover="this.style.background='rgba(239,68,68,0.05)'" onmouseout="this.style.background='transparent'">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem; font-weight: 700;">{{ d.student.name|first|upper }}</div>
+                            <span style="color: var(--text-primary); font-weight: 600; font-size: 0.88rem;">{{ d.student.name }}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 4px; color: #ef4444; font-size: 0.82rem; font-weight: 700;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                            {{ d.drop }}%
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+                {% else %}
+                <div style="text-align: center; padding: 0.75rem 0; color: var(--text-muted); font-size: 0.85rem;">
+                    No declining trends detected
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% include 'recognition/components/_teacher_defaulters_list.html' %}
+    </div>
+
+    <style>
+        @media (max-width: 768px) {
+            .dashboard-card-body > div:nth-child(2) { grid-template-columns: 1fr !important; }
+        }
+        /* Defaulter card hover effect */
+        a > div[style*="border-color: rgba(239, 68, 68, 0.1)"]:hover {
+            border-color: rgba(239, 68, 68, 0.4) !important;
+            background: rgba(239, 68, 68, 0.05) !important;
+            transform: translateY(-2px);
+        }
+    </style>
+    {% endif %}
+    
+</div>
+
+<style>
+    .students-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .student-card-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        height: 100%;
+    }
+
+    .student-card {
+        background: var(--bg-surface);
+        border: 2px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        height: 100%;
+        min-height: 120px;
+        /* Ensure minimum height */
+    }
+
+    .student-card:hover {
+        background: var(--bg-body);
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: #6366f1;
+    }
+
+    .student-avatar {
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .student-info {
+        flex: 1;
+        min-width: 0;
+        /* Critical for text truncation in flex item */
+    }
+
+    .student-name {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 1.1rem;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .student-rollno {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-top: 4px;
+    }
+
+    .student-meta {
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .student-dept-badge {
+        display: block;
+        font-size: 0.8rem;
+        color: #6366f1;
+        background: rgba(99, 102, 241, 0.1);
+        padding: 4px 8px;
+        border-radius: 6px;
+        white-space: nowrap;
+    }
+</style>
+{% endblock %}

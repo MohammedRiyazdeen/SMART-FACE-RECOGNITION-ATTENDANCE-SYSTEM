@@ -1,0 +1,75 @@
+        {% if attendance_records %}
+        <div class="attendance-history-container">
+            {% regroup attendance_records by date as date_list %}
+            {% for date_group in date_list %}
+            <div style="margin-bottom: 2rem;">
+                <!-- Date Header with nice styling -->
+                <div
+                    style="display: flex; align-items: center; background: linear-gradient(to right, rgba(99, 102, 241, 0.1), transparent); padding: 12px 20px; border-radius: 8px 8px 0 0; border-left: 4px solid #6366f1; margin-bottom: 0;">
+                    <span
+                        style="font-size: 1.2rem; font-weight: 700; color: #4338ca; display: flex; align-items: center; gap: 8px;">
+                        📅 {{ date_group.grouper|date:"l, F j, Y" }}
+                    </span>
+                </div>
+
+                <div
+                    style="overflow-x: auto; background: var(--card-bg); border-radius: 0 0 8px 8px; border: 1px solid var(--border-color); border-top: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <table style="width: 100%; border-collapse: collapse; color: var(--text-primary);">
+                        <thead>
+                            <tr style="background-color: rgba(0,0,0,0.02);">
+                                <th
+                                    style="padding: 16px 20px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border-color); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em;">
+                                    Period</th>
+                                <th
+                                    style="padding: 16px 20px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border-color); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em;">
+                                    Subject</th>
+                                <th
+                                    style="padding: 16px 20px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border-color); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em;">
+                                    Time</th>
+                                <th
+                                    style="padding: 16px 20px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 2px solid var(--border-color); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em;">
+                                    Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in date_group.list %}
+                            <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;"
+                                onmouseover="this.style.backgroundColor='rgba(99,102,241,0.03)'"
+                                onmouseout="this.style.backgroundColor='transparent'">
+                                <td style="padding: 16px 20px; font-weight: 500; color: var(--text-primary);">{{ record.get_period_display }}</td>
+                                <td style="padding: 16px 20px; font-weight: 600; color: #4f46e5;">{{ record.get_subject_name }}</td>
+                                <td style="padding: 16px 20px; color: var(--text-secondary);">{{ record.time|time:"h:i A" }}</td>
+                                <td style="padding: 16px 20px;">
+                                    {% if record.status == 'Present' %}
+                                    <span
+                                        style="display: inline-flex; align-items: center; gap: 6px; background: rgba(34, 197, 94, 0.15); color: #16a34a; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; border: 1px solid rgba(34,197,94,0.3);">
+                                        <span
+                                            style="width: 8px; height: 8px; background: #16a34a; border-radius: 50%; display: inline-block;"></span>
+                                        {{ record.status }}
+                                    </span>
+                                    {% else %}
+                                    <span
+                                        style="display: inline-flex; align-items: center; gap: 6px; background: rgba(239, 68, 68, 0.15); color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; border: 1px solid rgba(239,68,68,0.3);">
+                                        <span
+                                            style="width: 8px; height: 8px; background: #dc2626; border-radius: 50%; display: inline-block;"></span>
+                                        {{ record.status }}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📅</div>
+            <p style="font-size: 1rem; margin-bottom: 0.5rem;">No attendance records found{% if filter_date or filter_subject or filter_status or active_filter != 'today' %} for the selected filters{% endif %}.</p>
+            {% if filter_date or filter_subject or filter_status or active_filter != 'today' %}
+            <a href="?filter=today" style="color: #f43f5e; font-weight: 600; text-decoration: none; font-size: 0.9rem;">← Reset to Today</a>
+            {% endif %}
+        </div>
+        {% endif %}

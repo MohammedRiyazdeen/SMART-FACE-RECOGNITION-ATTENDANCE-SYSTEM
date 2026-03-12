@@ -1,0 +1,293 @@
+{% extends 'recognition/base.html' %}
+{% load static %}
+
+{% block title %}Home - Face Recognition System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-card">
+        <div class="dashboard-card-inner">
+            <div class="dashboard-left">
+                <div class="dashboard-avatar">
+                    <div class="dashboard-avatar-ring"><img src="{% static 'recognition/img/default.png' %}"
+                            alt="Profile" class="dashboard-avatar-img"></div>
+                </div>
+                <div class="dashboard-info">
+                    <h2 class="dashboard-name">{{ user.name|upper }}</h2>
+                    <div
+                        style="font-size: 0.9rem; color: var(--primary-color); font-weight: 600; margin-bottom: 0.5rem;">
+                        Day Order: {{ day_order }}</div>
+                    <div class="dashboard-meta">
+                        {% if user.department and user.year %}
+                        <span class="dashboard-badge"><span class="badge-icon">&#x1F393;</span>{{ user.year }}-Year / {{ user.get_department_display }}</span>
+                        {% else %}
+                        <span class="dashboard-badge badge-warning"><span
+                                class="badge-icon">&#x26A0;&#xFE0F;</span>Profile incomplete</span>
+                        {% endif %}
+                        <span class="dashboard-badge"><span class="badge-icon">&#x1F194;</span>{{ user.rollno }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="dashboard-gradient-bar"></div>
+    </div>
+
+    <!-- Analytics Section -->
+    <div class="dashboard-card" style="margin-top: 2rem;">
+        <div class="dashboard-card-body">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <h2 class="card-title" style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5rem;">&#x1f4ca;</span> Performance Analytics
+                </h2>
+                {% if analytics.total > 0 %}
+                {% if analytics.is_warning %}
+                <span
+                    style="background: rgba(239, 68, 68, 0.15); color: #dc2626; padding: 8px 16px; border-radius: 30px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.9rem;">
+                    &#x26A0;&#xFE0F; Attendance Below 75% Limit
+                </span>
+                {% else %}
+                <span
+                    style="background: rgba(34, 197, 94, 0.15); color: #16a34a; padding: 8px 16px; border-radius: 30px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 0.9rem;">
+                    &#x2705; Good Standing
+                </span>
+                {% endif %}
+                {% endif %}
+            </div>
+
+            {% if analytics.total > 0 %}
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+                <div
+                    style="background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                    <div
+                        style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+                        Total Days (90d)</div>
+                    <div style="font-size: 2.2rem; font-weight: 800; color: var(--text-primary);">{{ analytics.total }}
+                    </div>
+                </div>
+                <div
+                    style="background: rgba(34,197,94,0.05); border: 1px solid rgba(34,197,94,0.2); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                    <div
+                        style="font-size: 0.9rem; color: #16a34a; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+                        Days Present</div>
+                    <div style="font-size: 2.2rem; font-weight: 800; color: #15803d;">{{ analytics.present }}</div>
+                </div>
+                <div
+                    style="background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                    <div
+                        style="font-size: 0.9rem; color: #dc2626; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+                        Days Absent</div>
+                    <div style="font-size: 2.2rem; font-weight: 800; color: #b91c1c;">{{ analytics.absent }}</div>
+                </div>
+                <div
+                    style="background: linear-gradient(135deg, rgba(249,115,22,0.1), rgba(249,115,22,0.05)); border: 1px solid rgba(249,115,22,0.2); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                    <div
+                        style="font-size: 0.9rem; color: #c2410c; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+                        Attendance %</div>
+                    <div style="font-size: 2.2rem; font-weight: 800; color: #ea580c;">{{ analytics.percentage }}%</div>
+                </div>
+            </div>
+
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+                <!-- DAILY HEATMAP (shared component) -->
+                {% include 'recognition/_heatmap.html' %}
+            </div>
+        </div>
+
+        <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+            <!-- PIE CHART -->
+            <div
+                style="background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
+                <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-primary); font-size: 1.1rem;">
+                    Present vs Absent</h4>
+                <div style="height: 250px; display: flex; justify-content: center;"><canvas id="pieChart"></canvas>
+                </div>
+            </div>
+            <!-- POLAR CHART: Subject Avoidance -->
+            <div
+                style="background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h4 style="margin: 0; color: var(--text-primary); font-size: 1.1rem;">Subject Avoidance</h4>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Missed Core Classes (90d)</div>
+                </div>
+                <div style="height: 250px; display: flex; justify-content: center;"><canvas id="periodChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div
+        style="background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem;">
+        <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-primary); font-size: 1.1rem;">
+            Subject-wise Attendance %</h4>
+        <div style="height: 250px;"><canvas id="subjectChart"></canvas></div>
+        {% if analytics.subject_legend %}
+        <div style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 2rem;">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                {% for short, full in analytics.subject_legend.items %}
+                <div
+                    style="display: flex; align-items: center; background: var(--bg-body); padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div
+                        style="font-weight: 700; color: #10b981; font-size: 0.95rem; margin-right: 12px; border-right: 1px solid var(--border-color); padding-right: 12px;">
+                        {{ short }}</div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">{{ full }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+        <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">&#x1F4ca;</div>
+        <p style="font-size: 1.1rem;">No data available for analytics yet.</p>
+    </div>
+    {% endif %}
+</div>
+</div>
+
+</div>
+
+{% if analytics.total > 0 %}
+{{ analytics.chart_data|json_script:"analytics-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const dataElement = document.getElementById('analytics-data');
+        if (!dataElement) return;
+        const chartData = JSON.parse(JSON.parse(dataElement.textContent));
+
+        Chart.defaults.color = '#9ca3af';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+
+        // Heatmap is now handled by the shared _heatmap.html include
+
+
+        const ctxPie = document.getElementById('pieChart').getContext('2d');
+        new Chart(ctxPie, {
+            type: 'doughnut',
+            data: {
+                labels: chartData.pie.labels,
+                datasets: [{
+                    data: chartData.pie.data,
+                    backgroundColor: ['#22c55e', '#ef4444'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } }
+                }
+            }
+        });
+
+        // 3. Subject Avoidance Radar Chart
+        const avoidanceData = chartData.subject_avoidance;
+        if (avoidanceData) {
+            const ctxPeriod = document.getElementById('periodChart').getContext('2d');
+            new Chart(ctxPeriod, {
+                type: 'radar',
+                data: {
+                    labels: avoidanceData.labels,
+                    datasets: [{
+                        label: 'Times Absent',
+                        data: avoidanceData.data,
+                        backgroundColor: 'rgba(244, 63, 94, 0.2)',
+                        borderColor: '#f43f5e',
+                        pointBackgroundColor: '#f43f5e',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#f43f5e',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(150, 150, 150, 0.2)' },
+                            grid: { color: 'rgba(150, 150, 150, 0.2)' },
+                            pointLabels: {
+                                color: 'var(--text-secondary)',
+                                font: { size: 10, family: "'Inter', sans-serif" }
+                            },
+                            ticks: { display: false, backdropColor: 'transparent' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return ` Missed: ${context.parsed.r} times`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const ctxSubject = document.getElementById('subjectChart').getContext('2d');
+        new Chart(ctxSubject, {
+            type: 'bar',
+            data: {
+                labels: chartData.subject.labels,
+                datasets: [
+                    {
+                        type: 'line',
+                        label: 'Trend',
+                        data: chartData.subject.data,
+                        borderColor: 'rgba(56, 189, 248, 0.8)',
+                        backgroundColor: 'rgba(56, 189, 248, 0.05)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: 'rgba(56, 189, 248, 1)',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Attendance %',
+                        data: chartData.subject.data,
+                        backgroundColor: chartData.subject.data.map(val =>
+                            val < 75 ? 'rgba(244, 63, 94, 0.55)' : 'rgba(20, 184, 166, 0.6)'
+                        ),
+                        hoverBackgroundColor: chartData.subject.data.map(val =>
+                            val < 75 ? 'rgba(244, 63, 94, 0.8)' : 'rgba(20, 184, 166, 0.85)'
+                        ),
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        barPercentage: 0.5,
+                        categoryPercentage: 0.6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { min: 0, max: 100, grid: { color: 'rgba(255, 255, 255, 0.04)' }, ticks: { font: { size: 11 } } },
+                    x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 0, font: { size: 11 } } }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+
+{% endblock %}

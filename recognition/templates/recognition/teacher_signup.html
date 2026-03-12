@@ -1,0 +1,132 @@
+{% extends 'recognition/base.html' %}
+
+{% block title %}Teacher Signup - Face Recognition System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-container">
+        <div class="auth-card">
+            <h2 class="auth-title">Teacher Signup</h2>
+            <p class="auth-subtitle">Create your teacher account</p>
+
+            <form method="post" class="auth-form">
+                {% csrf_token %}
+
+                {% for field in form %}
+                <div class="input-group">
+                    <label for="{{ field.id_for_label }}" class="input-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <div class="field-error">
+                        {% for error in field.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary btn-large">
+                    Create Account
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
+                <p style="margin-top: 10px; font-size: 0.9em;"><a href="{% url 'signup' %}">Student Signup</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .auth-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh;
+    }
+
+    .auth-card {
+        background: var(--bg-surface);
+        border: 2px solid var(--border-color);
+        border-radius: 20px;
+        padding: 3rem;
+        width: 100%;
+        max-width: 450px;
+        backdrop-filter: blur(10px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .auth-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-align: center;
+        color: var(--text-primary);
+    }
+
+    .auth-subtitle {
+        color: var(--text-secondary);
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .auth-form .input-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .auth-form input,
+    .auth-form select {
+        width: 100%;
+        padding: 1rem;
+        background: var(--bg-body);
+        border: 2px solid var(--border-color);
+        border-radius: 10px;
+        color: var(--text-primary);
+        font-size: 1rem;
+        font-family: inherit;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .auth-form select option {
+        background: var(--bg-surface);
+        color: var(--text-primary);
+    }
+
+    .auth-form input:focus,
+    .auth-form select:focus {
+        outline: none;
+        border-color: #6366f1;
+        background: var(--bg-surface);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    }
+
+    .auth-form input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .field-error {
+        color: #ef4444;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+    }
+
+    .auth-footer {
+        text-align: center;
+        margin-top: 2rem;
+        color: var(--text-secondary);
+    }
+
+    .auth-footer a {
+        color: #6366f1;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .auth-footer a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
