@@ -7,10 +7,10 @@ An AI-powered, full-stack web application built with **Django** and **OpenCV** d
 ![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white)
 
-## 📌 Project Overview
+##  Project Overview
 Traditional attendance systems are manual, time-consuming, and prone to proxy attendance. This system leverages facial recognition technology to provide a seamless, secure, and touchless attendance management solution for educational institutions.
 
-## ✨ Key Features
+##  Key Features
 - **Real-Time Face Recognition:** Utilizes OpenCV's DNN module (`res10_300x300_ssd`) for robust live facial detection.
 - **Automated Attendance Logging:** Matches detected faces with the student database and marks attendance instantly.
 - **Teacher Dashboard:** A dedicated portal for teachers to manage schedules, view attendance reports, and track defaulters.
@@ -18,14 +18,14 @@ Traditional attendance systems are manual, time-consuming, and prone to proxy at
 - **Department & Period Filtering:** Structured database isolating attendance records by department, year, and specific class periods.
 - **Secure Authentication:** Role-based access control separating Superadmin, Teachers, and Students.
 
-## 🛠️ Technology Stack
+##  Technology Stack
 - **Backend:** Python, Django
 - **Computer Vision Model:** OpenCV (DNN, Haar Cascades, LBPH Face Recognizer)
 - **Frontend / UI:** HTML5, CSS3, JavaScript, Bootstrap
 - **Database:** SQLite (Development) / PostgreSQL (Ready)
 - **Architecture:** MVT (Model-View-Template)
 
-## 📁 Project Structure
+##  Project Structure
 ```text
 Smart-Face-Recognition-Attendance-System/
 ├── face_recognition_web/    # Core Django settings & configurations
@@ -39,7 +39,7 @@ Smart-Face-Recognition-Attendance-System/
 └── requirements.txt         # Project dependencies
 ```
 
-## 🚀 Installation & Setup
+##  Installation & Setup
 
 1. **Clone the Repository:**
    ```bash
@@ -75,14 +75,14 @@ Smart-Face-Recognition-Attendance-System/
    ```
    *Visit `http://127.0.0.1:8000` in your browser.*
 
-## 📸 Usage Workflow
+##  Usage Workflow
 1. **Admin/Teacher Setup:** Log into the dashboard to define departments and schedules.
 2. **Student Registration:** Enroll a student via the web form; the system will open the webcam to capture sample images and train the model.
 3. **Take Attendance:** The teacher activates the camera for a specific period. As students walk by, the system detects faces, verifies them, and pushes attendance data directly to the database.
 4. **Analytics:** View heatmaps, generate PDF reports, or notify absentees directly from the UI.
 
-## 🤝 Contributing
+##  Contributing
 Contributions, issues, and feature requests are welcome!
 
-## 📄 License
+##  License
 This project is open-source and available under the MIT License.
