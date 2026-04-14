@@ -1,134 +1,88 @@
-# Simple Face Recognition System
+# Smart Face Recognition Attendance System
 
-A lightweight and interactive face recognition system that can register faces and recognize them in real-time using your webcam. Built with OpenCV's Haar Cascade and LBPH (Local Binary Patterns Histograms) face recognizer.
+An AI-powered, full-stack web application built with **Django** and **OpenCV** designed to automate student attendance tracking using advanced Deep Neural Networks (DNN) for real-time face detection and recognition.
 
-## Features
+![Project Banner](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white)
 
-- **Interactive Registration**: Captures 10 photos of your face for accurate recognition
-- **Real-time Recognition**: Detects and identifies faces in live camera feed using LBPH algorithm
-- **Voice Announcements**: Speaks out the person's name (e.g., "This is Riyaz's face") or "Unknown person detected"
-- **Visual Feedback**: Shows bounding boxes around detected faces (green for known, red for unknown)
-- **Confidence Score**: Displays recognition confidence for each detected face
-- **Persistent Storage**: Saves registered faces for future use
-- **Multiple Faces**: Can register and recognize multiple people
+## 📌 Project Overview
+Traditional attendance systems are manual, time-consuming, and prone to proxy attendance. This system leverages facial recognition technology to provide a seamless, secure, and touchless attendance management solution for educational institutions.
 
-## Requirements
+## ✨ Key Features
+- **Real-Time Face Recognition:** Utilizes OpenCV's DNN module (`res10_300x300_ssd`) for robust live facial detection.
+- **Automated Attendance Logging:** Matches detected faces with the student database and marks attendance instantly.
+- **Teacher Dashboard:** A dedicated portal for teachers to manage schedules, view attendance reports, and track defaulters.
+- **Student Registration & Onboarding:** Easy UI for registering new students and dynamically capturing their face datasets.
+- **Department & Period Filtering:** Structured database isolating attendance records by department, year, and specific class periods.
+- **Secure Authentication:** Role-based access control separating Superadmin, Teachers, and Students.
 
-- Python 3.7 or higher
-- Webcam
-- Windows/Linux/Mac OS
+## 🛠️ Technology Stack
+- **Backend:** Python, Django
+- **Computer Vision Model:** OpenCV (DNN, Haar Cascades, LBPH Face Recognizer)
+- **Frontend / UI:** HTML5, CSS3, JavaScript, Bootstrap
+- **Database:** SQLite (Development) / PostgreSQL (Ready)
+- **Architecture:** MVT (Model-View-Template)
 
-## Installation
-
-1. Install the required packages:
-```bash
-pip install -r requirements.txt
+## 📁 Project Structure
+```text
+Smart-Face-Recognition-Attendance-System/
+├── face_recognition_web/    # Core Django settings & configurations
+├── recognition/             # Main app (Views, Models, URLs)
+│   ├── models_dnn/          # AI face detection models (Caffe)
+│   ├── services/            # Background tasks and email services
+│   ├── static/              # CSS, JS, and Images
+│   └── templates/           # HTML user interfaces
+├── face_data.pkl            # Trained dataset embeddings
+├── manage.py                # Django execution script
+└── requirements.txt         # Project dependencies
 ```
 
-Or install manually:
-```bash
-pip install opencv-contrib-python numpy pyttsx3
-```
+## 🚀 Installation & Setup
 
-**Note**: The installation is much simpler than the original face-recognition library as we use OpenCV's built-in face recognition capabilities.
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/MohammedRiyazdeen/Smart-Face-Recognition-Attendance-System.git
+   cd Smart-Face-Recognition-Attendance-System
+   ```
 
-## Usage
+2. **Create a Virtual Environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows use: venv\Scripts\activate
+   ```
 
-1. Run the application:
-```bash
-python main_simple.py
-```
+3. **Install Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-2. **First Time Setup**:
-   - Enter your name when prompted (e.g., "Riyaz")
-   - The camera will open
-   - Position your face in the frame (you'll see a green rectangle when detected)
-   - Press **SPACE** to capture a photo (capture 10 photos with slight variations)
-   - Try different angles and expressions for better accuracy
-   - Press **Q** to quit registration early (need at least 5 photos)
+4. **Apply Database Migrations:**
+   ```bash
+   python manage.py makemigrations
+   python manage.py migrate
+   ```
 
-3. **Face Recognition**:
-   - After registration, press ENTER to start recognition
-   - The camera will show live feed
-   - When your face is detected, it will show your name and speak "This is Riyaz's face"
-   - When an unknown face is detected, it will show "Unknown" and speak "Unknown person detected"
-   - The confidence score is shown in parentheses (lower is better)
-   - Press **Q** to quit
+5. **Create a Superuser (Admin):**
+   ```bash
+   python manage.py createsuperuser
+   ```
 
-4. **Next Time**:
-   - When you run the program again, it will load your saved face data
-   - Choose option:
-     - **(1)** Add more faces
-     - **(2)** Start recognition directly
-     - **(3)** View registered faces
-     - **(4)** Exit
+6. **Run the Development Server:**
+   ```bash
+   python manage.py runserver
+   ```
+   *Visit `http://127.0.0.1:8000` in your browser.*
 
-## How It Works
+## 📸 Usage Workflow
+1. **Admin/Teacher Setup:** Log into the dashboard to define departments and schedules.
+2. **Student Registration:** Enroll a student via the web form; the system will open the webcam to capture sample images and train the model.
+3. **Take Attendance:** The teacher activates the camera for a specific period. As students walk by, the system detects faces, verifies them, and pushes attendance data directly to the database.
+4. **Analytics:** View heatmaps, generate PDF reports, or notify absentees directly from the UI.
 
-1. **Face Detection**:
-   - Uses Haar Cascade Classifier to detect faces in video frames
-   - Draws bounding boxes around detected faces
+## 🤝 Contributing
+Contributions, issues, and feature requests are welcome!
 
-2. **Registration Phase**:
-   - Captures multiple photos of your face
-   - Converts images to grayscale
-   - Resizes face regions to standard size (200x200)
-   - Saves the face samples to `face_data.pkl`
-
-3. **Training Phase**:
-   - Uses LBPH (Local Binary Patterns Histograms) algorithm
-   - Creates a model from all registered face samples
-   - Assigns labels to each person
-
-4. **Recognition Phase**:
-   - Continuously captures frames from webcam
-   - Detects faces using Haar Cascade
-   - Compares detected faces with trained model using LBPH
-   - Displays the name if confidence is high enough, otherwise shows "Unknown"
-   - Announces the detection using text-to-speech
-
-## Tips for Best Results
-
-- Ensure good lighting when registering and recognizing
-- Look directly at the camera during registration
-- Capture photos with slight variations (different angles, expressions)
-- Keep only one person in frame during registration
-- Maintain a distance of 1-2 feet from the camera
-
-## Troubleshooting
-
-**Camera not opening**:
-- Check if another application is using the camera
-- Try changing the camera index in the code (0 to 1 or 2)
-
-**Poor recognition accuracy**:
-- Register more photos (modify `photos_needed` in code)
-- Ensure good lighting conditions
-- Re-register with better quality photos
-
-**Installation errors**:
-- Make sure you have Visual C++ Build Tools installed (Windows)
-- Update pip: `pip install --upgrade pip`
-
-## File Structure
-
-```
-face_recognition_project/
-├── main.py              # Main application
-├── requirements.txt     # Python dependencies
-├── README.md           # This file
-└── face_data.pkl       # Saved face data (created after first registration)
-```
-
-## Customization
-
-You can customize the following in `main_simple.py`:
-
-- `photos_needed`: Number of photos to capture during registration (default: 10)
-- `recognition_confidence_threshold`: Face matching sensitivity (default: 70, lower = stricter)
-- Haar Cascade parameters: `scaleFactor`, `minNeighbors`, `minSize` for detection tuning
-- Frame processing: Adjust the modulo value in `frame_count % 30` to change speech frequency
-
-## License
-
-Free to use and modify for personal and educational purposes.
+## 📄 License
+This project is open-source and available under the MIT License.
