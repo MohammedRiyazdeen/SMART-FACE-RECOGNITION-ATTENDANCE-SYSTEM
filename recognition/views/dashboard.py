@@ -515,8 +515,14 @@ def today_attendance(request):
             'time_status': time_status,
         })
 
+    # Get selected department filter if any
+    selected_dept = request.GET.get('dept', '')
+
     # Get all students
-    students = Student.objects.filter(role='student').order_by('rollno')
+    all_students = Student.objects.filter(role='student')
+    if selected_dept:
+        all_students = all_students.filter(department=selected_dept)
+    all_students = all_students.order_by('rollno')
 
     # Pre-fetch subject names per department for today's day order
     dept_subjects = {}  # {dept: {period: subject_name}}
@@ -542,81 +548,113 @@ def today_attendance(request):
         return subj[:8]  # Fallback: first 8 chars
 
     # Get today's attendance records (batch query)
-    today_records = Attendance.objects.filter(date=today).select_related('student')
+    today_records = Attendance.objects.filter(date=today, student__in=all_students).select_related('student')
     attendance_map = {}  # {student_id: {period: status}}
     for rec in today_records:
         if rec.student_id not in attendance_map:
             attendance_map[rec.student_id] = {}
         attendance_map[rec.student_id][rec.period] = rec.status
 
-    # Build per-student row data
-    student_rows = []
+    # Group students by department
+    from collections import OrderedDict
+    dept_students = OrderedDict()
+    for student in all_students:
+        dept_key = student.department or 'UNKNOWN'
+        if dept_key not in dept_students:
+            dept_students[dept_key] = []
+        dept_students[dept_key].append(student)
+
+    # Build a dept_name lookup from DEPT_CHOICES
+    dept_name_map = dict(Student.DEPT_CHOICES)
+
+    # Build per-department table data
+    dept_tables = []
     total_present_count = 0
     total_absent_count = 0
     total_pending_count = 0
 
-    for student in students:
-        s_attendance = attendance_map.get(student.id, {})
-        s_dept_subjects = dept_subjects.get(student.department, {})
-        
-        periods = []
+    for dept_code, students_in_dept in dept_students.items():
+        dept_name = dept_name_map.get(dept_code, dept_code)
+        d_subjects = dept_subjects.get(dept_code, {})
+
+        # Build header subjects for THIS department
+        header_subjects = []
         for p in period_info:
-            pid = p['id']
-            subject_full = s_dept_subjects.get(pid, p['label'])
-            subject_short = shorten(subject_full)
-
-            if pid in s_attendance:
-                status = s_attendance[pid]  # 'Present' or 'Absent'
-            elif p['time_status'] == 'ended':
-                status = 'Absent'  # Period ended, no record = absent
-            else:
-                status = 'Pending'  # Period hasn't ended yet
-
-            if status == 'Present':
-                total_present_count += 1
-            elif status == 'Absent':
-                total_absent_count += 1
-            else:
-                total_pending_count += 1
-
-            periods.append({
-                'id': pid,
-                'status': status,
-                'subject_short': subject_short,
-                'subject_full': subject_full,
+            subj = d_subjects.get(p['id'], p['label'])
+            header_subjects.append({
+                'id': p['id'],
+                'label': p['label'],
+                'subject_short': shorten(subj),
+                'subject_full': subj,
+                'time': p['time'],
+                'time_status': p['time_status'],
             })
 
-        student_rows.append({
-            'student': student,
-            'periods': periods,
+        # Build student rows for this department
+        student_rows = []
+        dept_present = 0
+        dept_absent = 0
+        dept_pending = 0
+
+        for student in students_in_dept:
+            s_attendance = attendance_map.get(student.id, {})
+
+            periods = []
+            for p in period_info:
+                pid = p['id']
+                subject_full = d_subjects.get(pid, p['label'])
+                subject_short = shorten(subject_full)
+
+                if pid in s_attendance:
+                    status = s_attendance[pid]
+                elif p['time_status'] == 'ended':
+                    status = 'Absent'
+                else:
+                    status = 'Pending'
+
+                if status == 'Present':
+                    dept_present += 1
+                    total_present_count += 1
+                elif status == 'Absent':
+                    dept_absent += 1
+                    total_absent_count += 1
+                else:
+                    dept_pending += 1
+                    total_pending_count += 1
+
+                periods.append({
+                    'id': pid,
+                    'status': status,
+                    'subject_short': subject_short,
+                    'subject_full': subject_full,
+                })
+
+            student_rows.append({
+                'student': student,
+                'periods': periods,
+            })
+
+        dept_tables.append({
+            'dept_code': dept_code,
+            'dept_name': dept_name,
+            'header_subjects': header_subjects,
+            'student_rows': student_rows,
+            'student_count': len(students_in_dept),
+            'present': dept_present,
+            'absent': dept_absent,
+            'pending': dept_pending,
         })
 
-    # Build header subjects — use the most common department for header display
-    header_subjects = []
-    # Find the most common department among students
-    from collections import Counter
-    dept_counter = Counter(s.department for s in students if s.department)
-    primary_dept = dept_counter.most_common(1)[0][0] if dept_counter else None
-    primary_subjects = dept_subjects.get(primary_dept, {}) if primary_dept else {}
-    
-    for p in period_info:
-        subj = primary_subjects.get(p['id'], p['label'])
-        header_subjects.append({
-            'id': p['id'],
-            'label': p['label'],
-            'subject_short': shorten(subj),
-            'subject_full': subj,
-            'time': p['time'],
-            'time_status': p['time_status'],
-        })
+    departments = Student.DEPT_CHOICES
 
     return render(request, 'recognition/today_attendance.html', {
-        'student_rows': student_rows,
-        'header_subjects': header_subjects,
+        'dept_tables': dept_tables,
         'day_order': day_order,
         'today': today,
-        'total_students': students.count(),
+        'total_students': all_students.count(),
         'total_present': total_present_count,
         'total_absent': total_absent_count,
         'total_pending': total_pending_count,
+        'departments': departments,
+        'selected_dept': selected_dept,
     })

@@ -60,11 +60,25 @@
         </div>
     </div>
 
-    <!-- Search Bar -->
-    <div class="today-search-bar">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="studentSearch" placeholder="Search by name or roll number..." autocomplete="off">
-        <span id="searchCount" class="search-count"></span>
+    <!-- Filters & Search Bar -->
+    <div class="today-filters-container">
+        <!-- Department Filter -->
+        <form id="deptForm" method="GET" class="today-dept-filter">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+            <select name="dept" id="deptSelect" onchange="document.getElementById('deptForm').submit()">
+                <option value="">All Departments</option>
+                {% for dept_code, dept_name in departments %}
+                <option value="{{ dept_code }}" {% if request.GET.dept == dept_code %}selected{% endif %}>{{ dept_name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+
+        <!-- Search Bar -->
+        <div class="today-search-bar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="studentSearch" placeholder="Search by name or roll number..." autocomplete="off">
+            <span id="searchCount" class="search-count"></span>
+        </div>
     </div>
 
     <!-- Legend -->
@@ -74,65 +88,80 @@
         <div class="legend-item"><span class="legend-dot legend-pending"></span> Upcoming</div>
     </div>
 
-    <!-- Attendance Table -->
-    <div class="today-table-wrapper">
-        <table class="today-table" id="attendanceTable">
-            <thead>
-                <tr>
-                    <th class="th-fixed th-sno">#</th>
-                    <th class="th-fixed th-name">Student Name</th>
-                    <th class="th-fixed th-roll">Roll No</th>
-                    {% for h in header_subjects %}
-                    <th class="th-period {% if h.time_status == 'active' %}th-period-active{% elif h.time_status == 'upcoming' %}th-period-upcoming{% endif %}" title="{{ h.subject_full }} — {{ h.time }}">
-                        <div class="period-header-subject">{{ h.subject_short }}</div>
-                        <div class="period-header-label">P{{ h.id }}</div>
-                        {% if h.time_status == 'active' %}
-                        <div class="period-active-badge">LIVE</div>
-                        {% endif %}
-                    </th>
+    <!-- Attendance Tables — one per department -->
+    {% for dept in dept_tables %}
+    <div class="dept-section" id="dept-{{ dept.dept_code }}">
+        <!-- Department Header -->
+        <div class="dept-header">
+            <div class="dept-header-left">
+                <h2 class="dept-title">📚 {{ dept.dept_name }}</h2>
+                <div class="dept-chips">
+                    <span class="dept-chip chip-total">{{ dept.student_count }} students</span>
+                    <span class="dept-chip chip-present">✓ {{ dept.present }}</span>
+                    <span class="dept-chip chip-absent">✗ {{ dept.absent }}</span>
+                    {% if dept.pending > 0 %}<span class="dept-chip chip-pending">⏳ {{ dept.pending }}</span>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="today-table-wrapper">
+            <table class="today-table">
+                <thead>
+                    <tr>
+                        <th class="th-fixed th-sno">#</th>
+                        <th class="th-fixed th-name">Student Name</th>
+                        <th class="th-fixed th-roll">Roll No</th>
+                        {% for h in dept.header_subjects %}
+                        <th class="th-period {% if h.time_status == 'active' %}th-period-active{% elif h.time_status == 'upcoming' %}th-period-upcoming{% endif %}" title="{{ h.subject_full }} — {{ h.time }}">
+                            <div class="period-header-subject">{{ h.subject_short }}</div>
+                            <div class="period-header-label">P{{ h.id }}</div>
+                            {% if h.time_status == 'active' %}
+                            <div class="period-active-badge">LIVE</div>
+                            {% endif %}
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in dept.student_rows %}
+                    <tr class="student-row" data-name="{{ row.student.name|lower }}" data-roll="{{ row.student.rollno|lower }}">
+                        <td class="td-sno">{{ forloop.counter }}</td>
+                        <td class="td-name">
+                            <a href="{% url 'student_detail' row.student.id %}" class="student-link">
+                                <div class="mini-avatar">{{ row.student.name|first|upper }}</div>
+                                <span>{{ row.student.name }}</span>
+                            </a>
+                        </td>
+                        <td class="td-roll">{{ row.student.rollno }}</td>
+                        {% for p in row.periods %}
+                        <td class="td-period" title="{{ p.subject_full }} — {{ p.status }}">
+                            {% if p.status == 'Present' %}
+                            <div class="status-box status-present" aria-label="Present">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                            </div>
+                            {% elif p.status == 'Absent' %}
+                            <div class="status-box status-absent" aria-label="Absent">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </div>
+                            {% else %}
+                            <div class="status-box status-pending" aria-label="Pending">
+                                <span>—</span>
+                            </div>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
                     {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in student_rows %}
-                <tr class="student-row" data-name="{{ row.student.name|lower }}" data-roll="{{ row.student.rollno|lower }}">
-                    <td class="td-sno">{{ forloop.counter }}</td>
-                    <td class="td-name">
-                        <a href="{% url 'student_detail' row.student.id %}" class="student-link">
-                            <div class="mini-avatar">{{ row.student.name|first|upper }}</div>
-                            <span>{{ row.student.name }}</span>
-                        </a>
-                    </td>
-                    <td class="td-roll">{{ row.student.rollno }}</td>
-                    {% for p in row.periods %}
-                    <td class="td-period" title="{{ p.subject_full }} — {{ p.status }}">
-                        {% if p.status == 'Present' %}
-                        <div class="status-box status-present" aria-label="Present">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                        </div>
-                        {% elif p.status == 'Absent' %}
-                        <div class="status-box status-absent" aria-label="Absent">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        </div>
-                        {% else %}
-                        <div class="status-box status-pending" aria-label="Pending">
-                            <span>—</span>
-                        </div>
-                        {% endif %}
-                    </td>
-                    {% endfor %}
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-muted);">
-                        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">👥</div>
-                        No students found.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
+    {% empty %}
+    <div style="text-align: center; padding: 3rem; color: var(--text-muted); background: var(--bg-surface); border: 2px solid var(--border-color); border-radius: 20px;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">👥</div>
+        No students found.
+    </div>
+    {% endfor %}
 
     <!-- No Results Message -->
     <div id="noResults" class="no-results" style="display: none;">
@@ -242,8 +271,61 @@
         font-weight: 500;
     }
 
-    /* Search */
+    /* Filters & Search */
+    .today-filters-container {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .today-dept-filter {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--bg-surface);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 0;
+        transition: border-color 0.2s;
+        overflow: hidden;
+    }
+    .today-dept-filter:focus-within {
+        border-color: #6366f1;
+    }
+    .today-dept-filter svg {
+        color: var(--text-muted);
+        margin-left: 16px;
+        flex-shrink: 0;
+    }
+    .today-dept-filter select {
+        border: none;
+        background: var(--bg-surface);
+        outline: none;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        font-family: inherit;
+        font-weight: 600;
+        padding: 10px 16px 10px 6px;
+        cursor: pointer;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 30px;
+    }
+    .today-dept-filter select option {
+        background: var(--bg-surface);
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
     .today-search-bar {
+        flex: 1;
+        min-width: 250px;
         display: flex;
         align-items: center;
         gap: 10px;
@@ -251,7 +333,6 @@
         border: 2px solid var(--border-color);
         border-radius: 12px;
         padding: 10px 16px;
-        margin-bottom: 1rem;
         transition: border-color 0.2s;
     }
     .today-search-bar:focus-within {
@@ -482,6 +563,54 @@
         color: var(--text-muted);
         border: 1.5px dashed var(--border-color);
         opacity: 0.5;
+    }
+
+    /* Department Sections */
+    .dept-section {
+        margin-bottom: 2.5rem;
+    }
+    .dept-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    .dept-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0;
+    }
+    .dept-chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+    }
+    .dept-chip {
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 8px;
+        white-space: nowrap;
+    }
+    .chip-total {
+        background: rgba(99,102,241,0.1);
+        color: #6366f1;
+    }
+    .chip-present {
+        background: rgba(34,197,94,0.1);
+        color: #16a34a;
+    }
+    .chip-absent {
+        background: rgba(239,68,68,0.1);
+        color: #dc2626;
+    }
+    .chip-pending {
+        background: rgba(251,191,36,0.1);
+        color: #d97706;
     }
 
     .no-results {
