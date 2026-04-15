@@ -477,3 +477,146 @@ def student_detail_view(request, student_id):
         'showing_date': showing_date,
         'is_fallback_date': is_fallback_date,
     })
+
+
+@login_required
+def today_attendance(request):
+    """Teacher-only page: grid of all students × 5 periods for today."""
+    if request.user.role != 'teacher':
+        messages.warning(request, "Access denied. Teachers only.")
+        return redirect('index')
+
+    today = datetime.now().date()
+    day_order = get_day_order()
+    windows = get_attendance_windows()
+    now = datetime.now().time()
+
+    # Build period info with subject names
+    # Since subjects can vary by department, we'll use a representative department
+    # for headers, but show per-student subjects in tooltips
+    period_info = []
+    cycle = ['A', 'B', 'C', 'D', 'E', 'F']
+    start_date = datetime(2026, 2, 15).date()
+    delta = (today - start_date).days
+
+    for pid, label, start_t, end_t in windows:
+        # Check if period has ended, is active, or is upcoming
+        if now >= end_t:
+            time_status = 'ended'
+        elif start_t <= now <= end_t:
+            time_status = 'active'
+        else:
+            time_status = 'upcoming'
+
+        period_info.append({
+            'id': pid,
+            'label': label,
+            'time': f"{start_t.strftime('%I:%M %p')} - {end_t.strftime('%I:%M %p')}",
+            'time_status': time_status,
+        })
+
+    # Get all students
+    students = Student.objects.filter(role='student').order_by('rollno')
+
+    # Pre-fetch subject names per department for today's day order
+    dept_subjects = {}  # {dept: {period: subject_name}}
+    if delta >= 0:
+        current_day_order = cycle[delta % 6]
+        schedules = OrderSchedule.objects.filter(day_order=current_day_order)
+        for s in schedules:
+            if s.department not in dept_subjects:
+                dept_subjects[s.department] = {}
+            dept_subjects[s.department][s.period] = s.subject
+    
+    # Shorten subject names for column headers
+    def shorten(subj):
+        s = subj.upper().strip()
+        if 'DATA COMMUNICATION' in s or 'DATA COMMUCATION' in s or 'NETWORKING' in s: return 'DCN'
+        if 'ORACLE PRACTICAL' in s or ('ORACLE' in s and 'PRAC' in s): return 'ORC PRAC'
+        if 'ORACLE' in s: return 'ORC'
+        if 'C#' in s and 'PRAC' in s: return 'C# PRAC'
+        if 'C#' in s: return 'C#'
+        if 'INTERNET OF THINGS' in s or 'IOT' in s: return 'IOT'
+        if 'PROJECT' in s: return 'PROJ'
+        if 'OPERATING SYSTEM' in s or 'OS' == s: return 'OS'
+        return subj[:8]  # Fallback: first 8 chars
+
+    # Get today's attendance records (batch query)
+    today_records = Attendance.objects.filter(date=today).select_related('student')
+    attendance_map = {}  # {student_id: {period: status}}
+    for rec in today_records:
+        if rec.student_id not in attendance_map:
+            attendance_map[rec.student_id] = {}
+        attendance_map[rec.student_id][rec.period] = rec.status
+
+    # Build per-student row data
+    student_rows = []
+    total_present_count = 0
+    total_absent_count = 0
+    total_pending_count = 0
+
+    for student in students:
+        s_attendance = attendance_map.get(student.id, {})
+        s_dept_subjects = dept_subjects.get(student.department, {})
+        
+        periods = []
+        for p in period_info:
+            pid = p['id']
+            subject_full = s_dept_subjects.get(pid, p['label'])
+            subject_short = shorten(subject_full)
+
+            if pid in s_attendance:
+                status = s_attendance[pid]  # 'Present' or 'Absent'
+            elif p['time_status'] == 'ended':
+                status = 'Absent'  # Period ended, no record = absent
+            else:
+                status = 'Pending'  # Period hasn't ended yet
+
+            if status == 'Present':
+                total_present_count += 1
+            elif status == 'Absent':
+                total_absent_count += 1
+            else:
+                total_pending_count += 1
+
+            periods.append({
+                'id': pid,
+                'status': status,
+                'subject_short': subject_short,
+                'subject_full': subject_full,
+            })
+
+        student_rows.append({
+            'student': student,
+            'periods': periods,
+        })
+
+    # Build header subjects — use the most common department for header display
+    header_subjects = []
+    # Find the most common department among students
+    from collections import Counter
+    dept_counter = Counter(s.department for s in students if s.department)
+    primary_dept = dept_counter.most_common(1)[0][0] if dept_counter else None
+    primary_subjects = dept_subjects.get(primary_dept, {}) if primary_dept else {}
+    
+    for p in period_info:
+        subj = primary_subjects.get(p['id'], p['label'])
+        header_subjects.append({
+            'id': p['id'],
+            'label': p['label'],
+            'subject_short': shorten(subj),
+            'subject_full': subj,
+            'time': p['time'],
+            'time_status': p['time_status'],
+        })
+
+    return render(request, 'recognition/today_attendance.html', {
+        'student_rows': student_rows,
+        'header_subjects': header_subjects,
+        'day_order': day_order,
+        'today': today,
+        'total_students': students.count(),
+        'total_present': total_present_count,
+        'total_absent': total_absent_count,
+        'total_pending': total_pending_count,
+    })

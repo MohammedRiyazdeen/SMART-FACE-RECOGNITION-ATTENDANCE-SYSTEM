@@ -2,7 +2,7 @@
 # This allows `from .views import index` to continue working.
 
 from .auth import signup_view, login_view, logout_view, teacher_signup_view
-from .dashboard import index, teacher_dashboard, student_detail_view
+from .dashboard import index, teacher_dashboard, student_detail_view, today_attendance
 from .attendance import (
     get_attendance_windows,
     get_day_order,

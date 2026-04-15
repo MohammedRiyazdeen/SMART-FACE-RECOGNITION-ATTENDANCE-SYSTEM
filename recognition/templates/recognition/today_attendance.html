@@ -1,0 +1,585 @@
+{% extends 'recognition/base.html' %}
+{% load static %}
+
+{% block title %}Today's Attendance - Face Recognition System{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- Page Header -->
+    <div class="today-header">
+        <div class="today-header-top">
+            <div>
+                <h1 class="today-title">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="url(#grad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#6366f1"/><stop offset="100%" style="stop-color:#a855f7"/></linearGradient></defs>
+                        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    Today's Attendance
+                </h1>
+                <p class="today-subtitle">
+                    {{ today|date:"l, F j, Y" }} &middot; Day Order <strong>{{ day_order }}</strong>
+                </p>
+            </div>
+            <a href="{% url 'teacher_dashboard' %}" class="back-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="today-stats-row">
+        <div class="today-stat-card">
+            <div class="stat-icon stat-icon-total">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="stat-value">{{ total_students }}</div>
+            <div class="stat-label">Total Students</div>
+        </div>
+        <div class="today-stat-card">
+            <div class="stat-icon stat-icon-present">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="stat-value stat-present">{{ total_present }}</div>
+            <div class="stat-label">Present Slots</div>
+        </div>
+        <div class="today-stat-card">
+            <div class="stat-icon stat-icon-absent">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div class="stat-value stat-absent">{{ total_absent }}</div>
+            <div class="stat-label">Absent Slots</div>
+        </div>
+        <div class="today-stat-card">
+            <div class="stat-icon stat-icon-pending">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="stat-value stat-pending">{{ total_pending }}</div>
+            <div class="stat-label">Pending</div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="today-search-bar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="studentSearch" placeholder="Search by name or roll number..." autocomplete="off">
+        <span id="searchCount" class="search-count"></span>
+    </div>
+
+    <!-- Legend -->
+    <div class="today-legend">
+        <div class="legend-item"><span class="legend-dot legend-present"></span> Present</div>
+        <div class="legend-item"><span class="legend-dot legend-absent"></span> Absent</div>
+        <div class="legend-item"><span class="legend-dot legend-pending"></span> Upcoming</div>
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="today-table-wrapper">
+        <table class="today-table" id="attendanceTable">
+            <thead>
+                <tr>
+                    <th class="th-fixed th-sno">#</th>
+                    <th class="th-fixed th-name">Student Name</th>
+                    <th class="th-fixed th-roll">Roll No</th>
+                    {% for h in header_subjects %}
+                    <th class="th-period {% if h.time_status == 'active' %}th-period-active{% elif h.time_status == 'upcoming' %}th-period-upcoming{% endif %}" title="{{ h.subject_full }} — {{ h.time }}">
+                        <div class="period-header-subject">{{ h.subject_short }}</div>
+                        <div class="period-header-label">P{{ h.id }}</div>
+                        {% if h.time_status == 'active' %}
+                        <div class="period-active-badge">LIVE</div>
+                        {% endif %}
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in student_rows %}
+                <tr class="student-row" data-name="{{ row.student.name|lower }}" data-roll="{{ row.student.rollno|lower }}">
+                    <td class="td-sno">{{ forloop.counter }}</td>
+                    <td class="td-name">
+                        <a href="{% url 'student_detail' row.student.id %}" class="student-link">
+                            <div class="mini-avatar">{{ row.student.name|first|upper }}</div>
+                            <span>{{ row.student.name }}</span>
+                        </a>
+                    </td>
+                    <td class="td-roll">{{ row.student.rollno }}</td>
+                    {% for p in row.periods %}
+                    <td class="td-period" title="{{ p.subject_full }} — {{ p.status }}">
+                        {% if p.status == 'Present' %}
+                        <div class="status-box status-present" aria-label="Present">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        {% elif p.status == 'Absent' %}
+                        <div class="status-box status-absent" aria-label="Absent">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </div>
+                        {% else %}
+                        <div class="status-box status-pending" aria-label="Pending">
+                            <span>—</span>
+                        </div>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">👥</div>
+                        No students found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- No Results Message -->
+    <div id="noResults" class="no-results" style="display: none;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
+        <p>No students match your search.</p>
+    </div>
+</div>
+
+<style>
+    /* ====== TODAY ATTENDANCE PAGE STYLES ====== */
+
+    .today-header {
+        margin-bottom: 1.5rem;
+    }
+    .today-header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    .today-title {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 6px 0;
+    }
+    .today-subtitle {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        margin: 0;
+    }
+    .today-subtitle strong {
+        color: #6366f1;
+        font-weight: 700;
+    }
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        color: var(--text-secondary);
+        font-size: 0.88rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .back-btn:hover {
+        border-color: #6366f1;
+        color: #6366f1;
+        transform: translateY(-1px);
+    }
+
+    /* Summary Stats */
+    .today-stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .today-stat-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 1.25rem;
+        text-align: center;
+        transition: all 0.25s;
+    }
+    .today-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+    }
+    .stat-icon-total { background: rgba(99,102,241,0.1); color: #6366f1; }
+    .stat-icon-present { background: rgba(34,197,94,0.1); color: #22c55e; }
+    .stat-icon-absent { background: rgba(239,68,68,0.1); color: #ef4444; }
+    .stat-icon-pending { background: rgba(251,191,36,0.1); color: #f59e0b; }
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1;
+        margin-bottom: 4px;
+    }
+    .stat-present { color: #22c55e; }
+    .stat-absent { color: #ef4444; }
+    .stat-pending { color: #f59e0b; }
+    .stat-label {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 500;
+    }
+
+    /* Search */
+    .today-search-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--bg-surface);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 10px 16px;
+        margin-bottom: 1rem;
+        transition: border-color 0.2s;
+    }
+    .today-search-bar:focus-within {
+        border-color: #6366f1;
+    }
+    .today-search-bar svg {
+        color: var(--text-muted);
+        flex-shrink: 0;
+    }
+    .today-search-bar input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        outline: none;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        font-family: inherit;
+    }
+    .today-search-bar input::placeholder {
+        color: var(--text-muted);
+        opacity: 0.6;
+    }
+    .search-count {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+        min-width: 70px;
+        text-align: right;
+    }
+
+    /* Legend */
+    .today-legend {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+    .legend-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+    }
+    .legend-present { background: #22c55e; }
+    .legend-absent { background: #ef4444; }
+    .legend-pending { background: var(--border-color); }
+
+    /* Table Wrapper */
+    .today-table-wrapper {
+        overflow-x: auto;
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-surface);
+        margin-bottom: 3rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Table */
+    .today-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+        min-width: 700px;
+    }
+    .today-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .today-table thead tr {
+        background: var(--bg-body);
+        border-bottom: 2px solid var(--border-color);
+    }
+    .today-table th {
+        padding: 14px 12px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-secondary);
+        text-align: left;
+        white-space: nowrap;
+    }
+    .th-sno { width: 40px; text-align: center; }
+    .th-name { min-width: 180px; }
+    .th-roll { min-width: 100px; }
+    .th-period {
+        text-align: center !important;
+        min-width: 80px;
+        padding: 10px 8px !important;
+    }
+    .th-period-active {
+        background: rgba(34,197,94,0.06) !important;
+    }
+    .th-period-upcoming {
+        opacity: 0.5;
+    }
+    .period-header-subject {
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: #6366f1;
+        margin-bottom: 2px;
+        letter-spacing: 0;
+        text-transform: none;
+    }
+    .period-header-label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+    .period-active-badge {
+        display: inline-block;
+        background: #22c55e;
+        color: white;
+        font-size: 0.55rem;
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        margin-top: 3px;
+        animation: livePulse 2s ease-in-out infinite;
+    }
+    @keyframes livePulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    /* Table Body */
+    .today-table tbody tr {
+        border-bottom: 1px solid var(--border-color);
+        transition: background 0.15s;
+    }
+    .today-table tbody tr:hover {
+        background: rgba(99,102,241,0.03);
+    }
+    .today-table tbody tr:last-child {
+        border-bottom: none;
+    }
+    .today-table td {
+        padding: 12px 12px;
+        vertical-align: middle;
+    }
+    .td-sno {
+        text-align: center;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+    .td-name {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    .student-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: inherit;
+        transition: color 0.15s;
+    }
+    .student-link:hover {
+        color: #6366f1;
+    }
+    .mini-avatar {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .td-roll {
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        font-weight: 500;
+    }
+    .td-period {
+        text-align: center;
+    }
+
+    /* Status Boxes */
+    .status-box {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.8rem;
+        transition: all 0.2s;
+        cursor: default;
+    }
+    .status-present {
+        background: rgba(34,197,94,0.12);
+        color: #16a34a;
+        border: 1.5px solid rgba(34,197,94,0.25);
+    }
+    .status-present:hover {
+        background: rgba(34,197,94,0.2);
+        transform: scale(1.1);
+        box-shadow: 0 0 12px rgba(34,197,94,0.3);
+    }
+    .status-absent {
+        background: rgba(239,68,68,0.12);
+        color: #dc2626;
+        border: 1.5px solid rgba(239,68,68,0.25);
+    }
+    .status-absent:hover {
+        background: rgba(239,68,68,0.2);
+        transform: scale(1.1);
+        box-shadow: 0 0 12px rgba(239,68,68,0.3);
+    }
+    .status-pending {
+        background: rgba(161,161,170,0.08);
+        color: var(--text-muted);
+        border: 1.5px dashed var(--border-color);
+        opacity: 0.5;
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-muted);
+    }
+
+    /* Hide row helper */
+    .student-row.hidden-row {
+        display: none;
+    }
+
+    /* ====== RESPONSIVE ====== */
+    @media (max-width: 768px) {
+        .today-stats-row {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .today-header-top {
+            flex-direction: column;
+        }
+        .back-btn {
+            align-self: flex-start;
+        }
+        .today-title {
+            font-size: 1.4rem;
+        }
+        .status-box {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+        }
+        .status-box svg {
+            width: 10px;
+            height: 10px;
+        }
+        .mini-avatar {
+            width: 26px;
+            height: 26px;
+            font-size: 0.65rem;
+        }
+    }
+    @media (max-width: 480px) {
+        .today-stats-row {
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+        .today-stat-card {
+            padding: 1rem;
+        }
+        .stat-value {
+            font-size: 1.4rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Client-side search filtering
+    const searchInput = document.getElementById('studentSearch');
+    const searchCount = document.getElementById('searchCount');
+    const rows = document.querySelectorAll('.student-row');
+    const noResults = document.getElementById('noResults');
+    const totalRows = rows.length;
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        let visible = 0;
+
+        rows.forEach((row, idx) => {
+            const name = row.getAttribute('data-name');
+            const roll = row.getAttribute('data-roll');
+            const match = !query || name.includes(query) || roll.includes(query);
+            
+            if (match) {
+                row.classList.remove('hidden-row');
+                visible++;
+            } else {
+                row.classList.add('hidden-row');
+            }
+        });
+
+        // Update serial numbers for visible rows
+        let sno = 1;
+        rows.forEach(row => {
+            if (!row.classList.contains('hidden-row')) {
+                row.querySelector('.td-sno').textContent = sno++;
+            }
+        });
+
+        if (query) {
+            searchCount.textContent = `${visible} of ${totalRows}`;
+        } else {
+            searchCount.textContent = '';
+        }
+
+        noResults.style.display = (visible === 0 && query) ? 'block' : 'none';
+    });
+</script>
+{% endblock %}
