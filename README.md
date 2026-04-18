@@ -2,10 +2,9 @@
 
 An AI-powered, full-stack web application built with **Django** and **OpenCV** designed to automate student attendance tracking using advanced Deep Neural Networks (DNN) for real-time face detection and recognition.
 
-![Project Banner](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=white)
-![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
-![Bootstrap](https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white)
+## 📺 Video Demonstration
+[![Smart Face Recognition Demo](https://img.youtube.com/vi/VZ_SWg88cHQ/0.jpg)](https://youtu.be/VZ_SWg88cHQ)
+*Click the image above to watch the full project walkthrough on YouTube.*
 
 ##  Project Overview
 Traditional attendance systems are manual, time-consuming, and prone to proxy attendance. This system leverages facial recognition technology to provide a seamless, secure, and touchless attendance management solution for educational institutions.
