@@ -58,7 +58,14 @@ Smart-Face-Recognition-Attendance-System/
    pip install -r requirements.txt
    ```
 
-4. **Apply Database Migrations:**
+4. **Setup Environment Variables:**
+   Create a `.env` file in the root directory (copy from `.env.example`) and add your credentials:
+   ```bash
+   cp .env.example .env  # On Windows use: copy .env.example .env
+   ```
+   *Edit the `.env` file with your database and email settings.*
+
+5. **Apply Database Migrations:**
    ```bash
    python manage.py makemigrations
    python manage.py migrate

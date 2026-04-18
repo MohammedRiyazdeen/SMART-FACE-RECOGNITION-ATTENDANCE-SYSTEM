@@ -252,20 +252,17 @@ def teacher_dashboard(request):
     if total_classes_all > 0:
         overall_percentage = round((present_classes_all / total_classes_all) * 100, 1)
     
-    # ====== NEW ANALYTICS ======
     from datetime import timedelta
     from .attendance import get_attendance_windows
     
     total_students = students.count()
     
-    # 1. TODAY'S SNAPSHOT
     today_records = Attendance.objects.filter(date=today)
     today_students_present = today_records.filter(status='Present').values('student').distinct().count()
     today_students_absent_count = total_students - today_students_present
     today_has_data = today_records.exists()
     today_percentage = round((today_students_present / total_students) * 100, 1) if total_students > 0 and today_has_data else 0
     
-    # 2. WEEKLY TREND — this week vs last week
     week_start = today - timedelta(days=today.weekday())  # Monday
     last_week_start = week_start - timedelta(days=7)
     last_week_end = week_start - timedelta(days=1)
@@ -298,7 +295,6 @@ def teacher_dashboard(request):
     week_change = round(this_week_pct - last_week_pct, 1)
     week_direction = 'up' if week_change > 0 else ('down' if week_change < 0 else 'same')
     
-    # 3. PERIOD-WISE BREAKDOWN (today)
     windows = get_attendance_windows()
     period_breakdown = []
     for pid, label, start_t, end_t in windows:
@@ -316,8 +312,6 @@ def teacher_dashboard(request):
             'has_data': p_total > 0,
         })
     
-    # 4. ATTENDANCE ALERTS — students with declining trend
-    # Compare last 2 weeks vs the 2 weeks before that
     two_weeks_ago = today - timedelta(days=14)
     four_weeks_ago = today - timedelta(days=28)
     declining_students = []

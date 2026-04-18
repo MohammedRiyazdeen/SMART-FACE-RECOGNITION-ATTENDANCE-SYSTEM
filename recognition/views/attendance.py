@@ -13,11 +13,11 @@ from ..services.email_service import send_absence_alert
 def get_attendance_windows():
    
     return [
-        ('1', 'First Period', time(8, 30), time(8, 40)),
-        ('2', 'Second Period', time(9, 00), time(10, 00)),
-        ('3', 'Third Period', time(10, 15), time(11, 15)),
-        ('4', 'Fourth Period', time(11, 15), time(12, 15)),
-        ('5', 'Fifth Period', time(12, 15), time(13, 15)),
+        ('1', 'First Period', time(6, 32), time(6, 59)),
+        ('2', 'Second Period', time(9, 27), time(9, 45)),
+        ('3', 'Third Period', time(10, 2), time(10, 10)),
+        ('4', 'Fourth Period', time(11, 10), time(11, 20)),
+        ('5', 'Fifth Period', time(2, 15), time(2, 30)),
     ]
 
 
@@ -150,7 +150,6 @@ def mark_attendance(request):
         if not is_open:
              return JsonResponse({'success': False, 'error': msg})
 
-        # CRITICAL: Identify student from face recognition result
         current = face_system.get_current_recognition()
         if not current or current.get('name') == 'Unknown':
             return JsonResponse({
@@ -230,7 +229,6 @@ def finalize_period_attendance(request):
         # 4. Mark as finalized in DB
         PeriodFinalization.objects.create(date=today, period=period_id)
         
-        # Adding success message including automated note
-        messages.success(request, f"Manual Override: Successfully finalized {period_label}. Sent {emails_sent} email alerts to parents of absent students.")
+        messages.success(request, f"Successfully finalized {period_label}. Sent {emails_sent} email alerts to parents of absent students.")
         
     return redirect('teacher_dashboard')

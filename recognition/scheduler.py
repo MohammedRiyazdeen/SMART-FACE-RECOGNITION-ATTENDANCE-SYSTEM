@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from django.conf import settings
@@ -6,10 +5,7 @@ from .models import PeriodFinalization, OrderSchedule, Student, Attendance
 from .views.attendance import get_attendance_windows, get_day_order
 from .services.email_service import send_absence_alert
 
-logger = logging.getLogger(__name__)
-
 def auto_finalize_and_email():
-    
     now = datetime.now()
     today = now.date()
     current_time = now.time()
@@ -18,26 +14,17 @@ def auto_finalize_and_email():
     day_order = get_day_order()
     
     if day_order == "-":
-        return # Not a valid academic day
+        return
 
     for period_id, label, start_t, end_t in windows:
-       
         end_mins = end_t.hour * 60 + end_t.minute
         curr_mins = current_time.hour * 60 + current_time.minute
         
-      
         if 0 <= (curr_mins - end_mins) <= 2:
-            
-           
             if not PeriodFinalization.objects.filter(date=today, period=period_id).exists():
-                print(f"Auto-finalizing {label} ({period_id}) at {current_time}...")
-                
+                print(f"Auto-finalizing {label} at {current_time}...")
                 PeriodFinalization.objects.create(date=today, period=period_id)
                 
-                # Subject logic per student handled below
-                pass
-                
-                # Find Absentees
                 students = Student.objects.filter(role='student').exclude(parent_email__isnull=True).exclude(parent_email__exact='')
                 emails_sent = 0
                 

@@ -219,8 +219,6 @@ class WebFaceRecognitionSystem:
             if name != "Unknown":
                 found_candidate_in_frame = True
                 
-                # CONSECUTIVE FRAME VALIDATION
-                # We need X consecutive frames of the same person to confirm recognition
                 if name == self.pending_name:
                     self.consecutive_frames += 1
                 else:
@@ -232,17 +230,9 @@ class WebFaceRecognitionSystem:
                     self.set_current_recognition(name, confidence)
                     found_confirmed_match = True
             
-        # CRITICAL FIX:
-        # 1. Only clear when we SAW a face but it was wrong (Unknown/different person).
-        #    When no face in frame, DON'T clear - allows mark_attendance request to complete.
-        #    get_current_recognition() expires results older than 5 seconds anyway.
         if not found_confirmed_match and found_candidate_in_frame:
-            # We saw a face but it was Unknown or wrong person - clear immediately
             self.set_current_recognition(None, 0)
-        # If no face in frame, leave previous recognition for grace period (expires in get)
 
-        # 2. Only reset the counter if we didn't even see a CANDIDATE (i.e. different face or empty).
-        # Note: If we saw "User A" but count < 8, found_candidate_in_frame is True, so we DO NOT reset.
         if not found_candidate_in_frame:
             self.consecutive_frames = 0
             self.pending_name = None

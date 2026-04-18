@@ -25,13 +25,9 @@ class StudentManager(BaseUserManager):
         return self.create_user(rollno, password, **extra_fields)
 
 class Student(AbstractUser):
-    """Custom user model for students using rollno as username"""
     rollno = models.CharField(max_length=20, unique=True, verbose_name="Roll Number")
     name = models.CharField(max_length=100, verbose_name="Full Name")
     
-    # Use rollno as the username field for authentication
-    
-    # Department Choices
     DEPT_CHOICES = [
         ('BCS_CS', 'BSc Computer Science'),
         ('BCOM', 'B.Com'),
@@ -46,26 +42,24 @@ class Student(AbstractUser):
         ('BSC_MICRO', 'BSc Micro Biology'),
     ]
     
-    # Year Choices
     YEAR_CHOICES = [
         ('I', 'I YEAR'),
         ('II', 'II YEAR'),
         ('III', 'III YEAR'),
     ]
     
-    department = models.CharField(max_length=20, choices=DEPT_CHOICES, blank=True, null=True, verbose_name="Department")
-    year = models.CharField(max_length=5, choices=YEAR_CHOICES, blank=True, null=True, verbose_name="Year")
-    
-    # Role Choices
     ROLE_CHOICES = [
         ('student', 'Student'),
         ('teacher', 'Teacher'),
         ('admin', 'Admin'),
     ]
+
+    department = models.CharField(max_length=20, choices=DEPT_CHOICES, blank=True, null=True, verbose_name="Department")
+    year = models.CharField(max_length=5, choices=YEAR_CHOICES, blank=True, null=True, verbose_name="Year")
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
     
-    parent_email = models.EmailField(verbose_name="Parent's Email", blank=True, null=True, help_text="Email address for daily attendance alerts and weekly summaries.")
-    dob = models.DateField(verbose_name="Date of Birth", blank=True, null=True, help_text="Used as password (DD/MM/YYYY)")
+    parent_email = models.EmailField(verbose_name="Parent's Email", blank=True, null=True)
+    dob = models.DateField(verbose_name="Date of Birth", blank=True, null=True)
 
     USERNAME_FIELD = 'rollno'
     REQUIRED_FIELDS = ['name']
@@ -73,7 +67,6 @@ class Student(AbstractUser):
     objects = StudentManager()
     
     def save(self, *args, **kwargs):
-        # Auto-fill username with rollno since AbstractUser requires a unique username
         if not self.username:
             self.username = self.rollno
         super().save(*args, **kwargs)
@@ -111,28 +104,23 @@ class Attendance(models.Model):
         return f"{self.student.name} - {self.get_period_display()} - {self.date}"
 
     def get_subject_name(self):
-        """
-        Dynamically fetch the subject name based on the date's Day Order and Period.
-        """
-        # Calculate Day Order for the attendance date
         from datetime import datetime
         start_date = datetime(2026, 2, 15).date()
         current_date = self.date
         delta = (current_date - start_date).days
         
         if delta < 0:
-            return self.get_period_display() # Fallback for dates before start
+            return self.get_period_display()
             
         cycle = ['A', 'B', 'C', 'D', 'E', 'F']
         index = delta % 6
         day_order = cycle[index]
         
-        # Look up schedule
         try:
             schedule = OrderSchedule.objects.get(day_order=day_order, period=self.period, department=self.student.department)
             return schedule.subject
         except OrderSchedule.DoesNotExist:
-            return self.get_period_display() # Fallback if no schedule found
+            return self.get_period_display()
 
 class OrderSchedule(models.Model):
     """

@@ -1,3 +1,8 @@
 opencv-contrib-python
 numpy
 pyttsx3
+django
+psycopg2-binary
+django-cors-headers
+python-dotenv
+gunicorn

@@ -5,18 +5,18 @@ Django settings for face_recognition_web project.
 from pathlib import Path
 import os
 
+from dotenv import load_dotenv
+
+# Load all variables from the .env file into the system
+load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-face-recognition-dev-key-change-in-production'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Security settings
+SECRET_KEY = os.environ.get('SECRET_KEY', 'default-unsafe-dev-key')
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
@@ -72,11 +72,11 @@ WSGI_APPLICATION = 'face_recognition_web.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'face_recognition_db',  
-        'USER': 'postgres',
-        'PASSWORD': 'Postgres@1149', 
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME', 'face_recognition_db'),  
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''), 
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
@@ -152,10 +152,8 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
-# 🚨 PUT YOUR GMAIL HERE 🚨
-EMAIL_HOST_USER = 'ariyazdeen128@gmail.com' 
-
-# 🚨 PUT THE 16-LETTER APP PASSWORD HERE (NO SPACES) 🚨
-EMAIL_HOST_PASSWORD = 'rkwitsfcqerdwdds'
+# Load email credentials from environment variables
+EMAIL_HOST_USER = os.environ.get('EMAIL_USER', '') 
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_APP_PASSWORD', '')
 
 DEFAULT_FROM_EMAIL = 'Attendance System <' + EMAIL_HOST_USER + '>'
